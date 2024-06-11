@@ -18,7 +18,10 @@ class Client:
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         cert_file, key_file = self.get_or_generate_cert()
+        self.context.load_verify_locations("ca_cert.pem")
         self.context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+        self.context.check_hostname = False
+        self.context.verify_mode = ssl.CERT_REQUIRED
 
     def get_or_generate_cert(self):
         if not os.path.exists(CERT_FILE) or not os.path.exists(KEY_FILE):
@@ -29,7 +32,7 @@ class Client:
             with open(CERT_FILE, "rb") as cert_file:
                 cert_data = cert_file.read()
                 cert = x509.load_pem_x509_certificate(cert_data, default_backend())
-                if cert.not_valid_after > datetime.datetime.utcnow():
+                if cert.not_valid_after > datetime.datetime.now(datetime.timezone.utc):
                     cert_valid = True
         except Exception as e:
             print(f"Error checking certificate validity: {e}")
@@ -40,11 +43,12 @@ class Client:
         return CERT_FILE, KEY_FILE
 
     def generate_self_signed_cert(self):
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048,
-            backend=default_backend()
-        )
+        with open("ca_key.pem", "rb") as f:
+            ca_key = serialization.load_pem_private_key(f.read(), password=None)
+        with open("ca_cert.pem", "rb") as f:
+            ca_cert = x509.load_pem_x509_certificate(f.read())
+
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         with open(KEY_FILE, "wb") as f:
             f.write(private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -52,7 +56,7 @@ class Client:
                 encryption_algorithm=serialization.NoEncryption()
             ))
 
-        subject = issuer = x509.Name([
+        subject = x509.Name([
             x509.NameAttribute(NameOID.COUNTRY_NAME, u"FR"),
             x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"Ile-de-France"),
             x509.NameAttribute(NameOID.LOCALITY_NAME, u"Villejuif"),
@@ -62,19 +66,19 @@ class Client:
         cert = x509.CertificateBuilder().subject_name(
             subject
         ).issuer_name(
-            issuer
+            ca_cert.subject
         ).public_key(
             private_key.public_key()
         ).serial_number(
             x509.random_serial_number()
         ).not_valid_before(
-            datetime.datetime.utcnow()
+            datetime.datetime.now(datetime.timezone.utc)
         ).not_valid_after(
-            datetime.datetime.utcnow() + datetime.timedelta(days=CERT_EXPIRATION_DAYS)
+            datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=CERT_EXPIRATION_DAYS)
         ).add_extension(
             x509.SubjectAlternativeName([x509.DNSName(u"localhost")]),
             critical=False,
-        ).sign(private_key, hashes.SHA256(), default_backend())
+        ).sign(ca_key, hashes.SHA256())
 
         with open(CERT_FILE, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))
