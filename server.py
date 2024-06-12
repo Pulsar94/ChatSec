@@ -9,8 +9,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 
-CERT_FILE = "key/server-cert.pem"
-KEY_FILE = "key/server-key.pem"
+CERT_FILE_SERVER = "key/server-cert.pem"
+KEY_FILE_SERVER = "key/server-key.pem"
 CERT_EXPIRATION_DAYS = 1
 
 class Client_data:
@@ -29,8 +29,8 @@ class Client_data:
 class Server:
     def __init__(self, data=Client_data()):
         self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        cert_file, key_file = self.get_or_generate_cert()
-        self.context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+        CERT_FILE_SERVER, KEY_FILE_SERVER = self.get_or_generate_cert()
+        self.context.load_cert_chain(certfile=CERT_FILE_SERVER, keyfile=KEY_FILE_SERVER)
         
         self.data = data
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,10 +39,10 @@ class Server:
         print("Server is ready to receive a connection")
 
     def get_or_generate_cert(self):
-        if os.path.exists(CERT_FILE) and os.path.exists(KEY_FILE):
-            cert = x509.load_pem_x509_certificate(open(CERT_FILE, 'rb').read(), default_backend())
+        if os.path.exists(CERT_FILE_SERVER) and os.path.exists(KEY_FILE_SERVER):
+            cert = x509.load_pem_x509_certificate(open(CERT_FILE_SERVER, 'rb').read(), default_backend())
             if cert.not_valid_after_utc > datetime.datetime.now(datetime.UTC):
-                return CERT_FILE, KEY_FILE
+                return CERT_FILE_SERVER, KEY_FILE_SERVER
         
         key = rsa.generate_private_key(
             public_exponent=65537,
@@ -64,17 +64,17 @@ class Server:
             .sign(key, hashes.SHA256(), default_backend())
         )
         
-        with open(CERT_FILE, "wb") as f:
+        with open(CERT_FILE_SERVER, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))
         
-        with open(KEY_FILE, "wb") as f:
+        with open(KEY_FILE_SERVER, "wb") as f:
             f.write(key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
                 encryption_algorithm=serialization.NoEncryption()
             ))
         
-        return CERT_FILE, KEY_FILE
+        return CERT_FILE_SERVER, KEY_FILE_SERVER
 
     def receive(self):
         (clientsocket, address) = self.serversocket.accept()
