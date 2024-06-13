@@ -2,21 +2,31 @@ import socket
 import ssl
 import os
 import datetime
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 
 CERT_FILE_SERVER = "key/server-cert.pem"
+CERT_FILE_CLIENT = "key/client-cert.pem"
+KEY_FILE_CLIENT = "key/client-key.pem"
 CERT_EXPIRATION_DAYS = 1
 
 class Client:
     def __init__(self):
         
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        #cert_file, key_file = self.get_or_generate_cert()
+        self.cert_file, self.key_file = self.get_or_generate_cert()
         self.context.load_verify_locations(CERT_FILE_SERVER)
         self.context.check_hostname = False
         self.context.verify_mode = ssl.CERT_REQUIRED
         
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if os.path.exists(CERT_FILE_CLIENT) and os.path.exists(CERT_FILE_CLIENT):
+
+    def get_or_generate_cert(self):
+        if os.path.exists(CERT_FILE_CLIENT) and os.path.exists(KEY_FILE_CLIENT):
             cert = x509.load_pem_x509_certificate(open(CERT_FILE_CLIENT, 'rb').read(), default_backend())
             if cert.not_valid_after_utc > datetime.datetime.now(datetime.UTC):
                 return CERT_FILE_CLIENT, KEY_FILE_CLIENT
@@ -41,7 +51,7 @@ class Client:
             .sign(key, hashes.SHA256(), default_backend())
         )
         
-        with open(CERT_FILE_SERVER, "wb") as f:
+        with open(CERT_FILE_CLIENT, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))
         
         with open(KEY_FILE_CLIENT, "wb") as f:
