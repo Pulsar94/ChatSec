@@ -6,6 +6,7 @@ class func:
         self.tag = {
             "create_room": self.create_room,
             "connect_room": self.connect_room,
+            "room_message": self.handle_room_message
         }
     
     def create_room(self, data, socket):
@@ -16,7 +17,6 @@ class func:
 
         client_data = jh.json_encode("room_created", "")
         socket.send(client_data.encode())
-        socket.close()
     
     def connect_room(self, data, socket):
         print("Connecting to room")
@@ -28,4 +28,11 @@ class func:
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())
-        socket.close()
+    
+    def handle_room_message(self, data, socket):
+        room = self.rooms.get_room(data["data"]["room"])
+        if room:
+            room.add_message(data["data"]["message"])
+        else:
+            client_data = jh.json_encode("room_not_found", "")
+            socket.send(client_data.encode())

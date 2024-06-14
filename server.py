@@ -14,8 +14,8 @@ class Server:
     def __init__(self):
         self.rooms = rooms.Rooms()
         self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        CERT_FILE_SERVER, KEY_FILE_SERVER = get_or_generate_cert()
-        self.context.load_cert_chain(certfile=CERT_FILE_SERVER, keyfile=KEY_FILE_SERVER)
+        cert, key = get_or_generate_cert(CERT_FILE_SERVER, KEY_FILE_SERVER, CERT_EXPIRATION_DAYS)
+        self.context.load_cert_chain(certfile=cert, keyfile=key)
         
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind((socket.gethostname(), 5000))

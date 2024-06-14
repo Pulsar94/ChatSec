@@ -1,5 +1,6 @@
 import socket
 import ssl
+import json_handler as jh
 
 class Rooms:
     def __init__(self):
@@ -41,6 +42,7 @@ class Room:
     
     def add_message(self, message):
         for g in self.guests:
-            g.send(message.encode())
+            data = jh.json_encode("room_message", message)
+            g.send(data.encode())
 
     
