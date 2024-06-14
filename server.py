@@ -23,9 +23,10 @@ class Server:
         print("Server is ready to receive a connection")
 
     def listen(self):
-        (clientsocket, address) = self.serversocket.accept()
-        print("Connection from", address, ". Creating new thread")
-        thread.Thread(target=self.handle_client, args=(clientsocket, address)).start()
+        while True:
+            (clientsocket, address) = self.serversocket.accept()
+            print("Connection from", address, ". Creating new thread")
+            thread.Thread(target=self.handle_client, args=(clientsocket, address)).start()
     
     def handle_client(self, socket, address):
         stream = self.context.wrap_socket(socket, server_side=True)
