@@ -52,20 +52,20 @@ class Client:
 def main():
     client = Client()
     client.connect(socket.gethostname(), 5000)
-    #thread.Thread(target=client.listen).start()
+    thread.Thread(target=client.listen).start()
     
     print("Client is ready to send to server")
 
     client.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
-    print(client.ssl_clientsocket.recv(1024).decode())
+    #print(client.ssl_clientsocket.recv(1024).decode())
     
     client.send(jh.json_encode("connect_room", {"name": "room1"}))
 
     client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
-    print(client.ssl_clientsocket.recv(1024).decode())
-    print(client.ssl_clientsocket.recv(1024).decode())
+    #print(client.ssl_clientsocket.recv(1024).decode())
+    #print(client.ssl_clientsocket.recv(1024).decode())
     
     client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
-    print(client.ssl_clientsocket.recv(1024).decode())
+    #print(client.ssl_clientsocket.recv(1024).decode())
     
 main()
