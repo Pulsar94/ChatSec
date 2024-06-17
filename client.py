@@ -2,6 +2,7 @@ import socket
 import ssl
 import threading as thread
 import json_handler as jh
+import time
 from certificate import get_or_generate_cert
 
 CERT_FILE_SERVER = "key/server-cert.pem"
@@ -16,7 +17,7 @@ class Client:
         
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         self.cert_file, self.key_file = get_or_generate_cert(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS)
-        self.context.load_verify_locations(self.cert_file)
+        self.context.load_verify_locations(CERT_FILE_SERVER)
         self.context.check_hostname = False
         self.context.verify_mode = ssl.CERT_REQUIRED
         
@@ -37,9 +38,6 @@ class Client:
         
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
-        
-    def receive(self):
-        return self.ssl_clientsocket.recv(1024).decode()
     
     def __del__(self):
         self.clientsocket.close()
@@ -47,10 +45,19 @@ class Client:
 def main():
     client = Client()
     client.connect(socket.gethostname(), 5000)
-    thread.Thread(target=client.listen).start()
-    data = jh.json_encode("create_room", {"name": "room1", "password": "1234"})
-    client.send(data)
-    data = jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"})
+    #thread.Thread(target=client.listen).start()
+    
+    print("Client is ready to send to server")
+
+    client.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
+    print("Room created")
+    print(client.ssl_clientsocket.recv(1024).decode())
+
+    client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
+    print("Message sent")
+    print(client.ssl_clientsocket.recv(1024).decode())
+    
+
     
     
 main()
