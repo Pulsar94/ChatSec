@@ -31,19 +31,30 @@ class Room:
         self.password = password
         self.guests = []
 
-    def add_guest(self, guest):
-        self.guests.append(guest)
+    def add_guest(self, guest, addr):
+        for sock in self.guests:
+            if list(sock.keys())[0] == addr:
+                print("Guest already in room")
+                return False
+        self.guests.append({addr:guest})
+        return True
 
-    def remove_guest(self, guest):
-        self.guests.remove(guest)
+    def remove_guest(self, addr):
+        for sock in self.guests:
+            if list(sock.keys())[0] == addr:
+                self.guests.remove(sock)
+                return
+        
+        return self.guests == 0
+
 
     def get_guests(self):
         return self.guests
     
     def add_message(self, message):
-        for g in self.guests:
-            print("Sending message to guest")
+        for sock in self.guests:
+            print("Sending message to guest", list(sock.keys())[0])
             data = jh.json_encode("room_message", message)
-            g.send(data.encode())
+            list(sock.values())[0].send(data.encode())
 
     
