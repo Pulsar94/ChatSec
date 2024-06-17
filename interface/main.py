@@ -53,7 +53,7 @@ class LoginPage(ttk.Frame):
 
     def login(self):
         # Vous pouvez ajouter la logique de connexion ici
-        self.controller.show_frame("ChatPage")
+        self.controller.show_frame("ChatPage") ###### changer pour une frame intermiédiaire pour les rooms ######
 
 class ChatPage(ttk.Frame):
     def __init__(self, parent, controller):
@@ -71,6 +71,8 @@ class ChatPage(ttk.Frame):
         right_frame = ttk.Frame(self)
         right_frame.pack(side="right", fill="both", expand=True)
 
+
+        ## A mettre dans l'intermediare ##
         user_list_label = ttk.Label(left_frame, text="Liste des utilisateurs")
         user_list_label.pack(pady=10, padx=10)
 
@@ -83,6 +85,7 @@ class ChatPage(ttk.Frame):
         for user in users:
             self.user_list.insert(tk.END, user)
             self.chat_histories[user] = []
+        ######################################################
 
         chat_label = ttk.Label(right_frame, text="Chat")
         chat_label.pack(pady=10, padx=10)
@@ -97,16 +100,18 @@ class ChatPage(ttk.Frame):
         send_button = ttk.Button(right_frame, text="Envoyer", command=self.send_message)
         send_button.pack(pady=5, padx=10)
 
+
+    ############ À mettre dans l'intermediare #############################
         self.current_user = None
 
-    def on_user_select(self, event):
+    def on_user_select(self, event): #### Change to room select ####
         selected_indices = self.user_list.curselection()
         if selected_indices:
             selected_index = selected_indices[0]
             self.current_user = self.user_list.get(selected_index)
             self.update_chat_history()
 
-    def update_chat_history(self):
+    def update_chat_history(self):      ######### local Chat History ######
         self.chat_text.config(state="normal")
         self.chat_text.delete(1.0, tk.END)
         if self.current_user in self.chat_histories:
@@ -114,13 +119,16 @@ class ChatPage(ttk.Frame):
                 self.chat_text.insert(tk.END, message + "\n")
         self.chat_text.config(state="disabled")
 
+    ########################################################################
+
     def clavier(self, event):
         self.send_message()
 
-    def send_message(self):
+    def send_message(self):        
         message = self.message_entry.get()
-        if message and self.current_user:
+        if message and self.current_user: ######### changer self.current_user to room ####
             self.chat_histories[self.current_user].append(f"{self.controller.frames['LoginPage'].username.get()}: {message}")
+            ############ ^ Add the client.send method ^ ############
             self.update_chat_history()
             self.message_entry.delete(0, tk.END)
 
