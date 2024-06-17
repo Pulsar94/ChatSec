@@ -91,6 +91,7 @@ class ChatPage(ttk.Frame):
         self.chat_text.pack(fill="both", expand=True, pady=5, padx=10)
 
         self.message_entry = ttk.Entry(right_frame)
+        self.message_entry.bind("<Return>", self.clavier)
         self.message_entry.pack(fill="x", pady=5, padx=10)
 
         send_button = ttk.Button(right_frame, text="Envoyer", command=self.send_message)
@@ -112,6 +113,13 @@ class ChatPage(ttk.Frame):
             for message in self.chat_histories[self.current_user]:
                 self.chat_text.insert(tk.END, message + "\n")
         self.chat_text.config(state="disabled")
+
+    def clavier(self, event):
+        message = self.message_entry.get()
+        if message and self.current_user:
+            self.chat_histories[self.current_user].append("Vous: " + message)
+            self.update_chat_history()
+            self.message_entry.delete(0, tk.END)
 
     def send_message(self):
         message = self.message_entry.get()
