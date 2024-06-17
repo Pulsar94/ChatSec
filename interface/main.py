@@ -115,16 +115,12 @@ class ChatPage(ttk.Frame):
         self.chat_text.config(state="disabled")
 
     def clavier(self, event):
-        message = self.message_entry.get()
-        if message and self.current_user:
-            self.chat_histories[self.current_user].append("Vous: " + message)
-            self.update_chat_history()
-            self.message_entry.delete(0, tk.END)
+        self.send_message()
 
     def send_message(self):
         message = self.message_entry.get()
         if message and self.current_user:
-            self.chat_histories[self.current_user].append("Vous: " + message)
+            self.chat_histories[self.current_user].append(f"{self.controller.frames['LoginPage'].username.get()}: {message}")
             self.update_chat_history()
             self.message_entry.delete(0, tk.END)
 
