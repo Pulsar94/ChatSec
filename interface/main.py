@@ -79,7 +79,7 @@ class ChatPage(ttk.Frame):
         self.user_list.bind("<<ListboxSelect>>", self.on_user_select)
 
         # Ajout des utilisateurs fictifs
-        users = ["User1", "User2", "User3"]
+        users = ["grp1", "grp2", "grp3"]
         for user in users:
             self.user_list.insert(tk.END, user)
             self.chat_histories[user] = []
