@@ -42,6 +42,7 @@ class Room:
     
     def add_message(self, message):
         for g in self.guests:
+            print("Sending message to guest")
             data = jh.json_encode("room_message", message)
             g.send(data.encode())
 

@@ -13,11 +13,10 @@ class func:
     def create_room(self, data, socket):
         room = rooms.Room(data["data"]["name"], data["data"]["password"])
         self.rooms.add_room(room)
-        #room.add_guest(socket)
+        room.add_guest(socket)
 
         client_data = jh.json_encode('room_created', '')
         socket.send(client_data.encode())
-        socket.close()
     
     def connect_room(self, data, socket):
         print("Connecting to room")
@@ -34,7 +33,7 @@ class func:
         room = self.rooms.get_room(data["data"]["room"])
         if room:
             print("Adding message to room")
-            #room.add_message(data["data"]["message"])
+            room.add_message(data["data"]["message"])
             client_data = jh.json_encode("room_found", "")
             socket.send(client_data.encode())
         else:

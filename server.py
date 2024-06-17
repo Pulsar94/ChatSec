@@ -22,7 +22,7 @@ class Server:
         
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind((socket.gethostname(), 5000))
-        self.serversocket.listen(50)
+        self.serversocket.listen(5)
         print("Server is ready to receive a connection")
 
     def listen(self):
@@ -35,13 +35,15 @@ class Server:
     
     def handle_client(self, stream, address):
         while True:
-            data = jh.json_decode(stream.recv(1024).decode())
-            print("Client says: ", data)
+            received = stream.recv(1024).decode()
+            if received != "":
+                data = jh.json_decode(received)
+                print("Client says: ", data)
 
-            for tag, callback in self.func.tag.items():
-                if jh.compare_tag_from_socket(data, tag, callback, stream):
-                    print("Executed callback for tag", tag)
-                    break
+                for tag, callback in self.func.tag.items():
+                    if jh.compare_tag_from_socket(data, tag, callback, stream):
+                        print("Executed callback for tag", tag)
+                        break
 
     def send(self, connstream, message):
         connstream.send(message.encode())

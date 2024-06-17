@@ -54,7 +54,8 @@ def main():
     print(client.ssl_clientsocket.recv(1024).decode())
 
     client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
-    print("Message sent")
+    #print("Message sent")
+    print(client.ssl_clientsocket.recv(1024).decode())
     print(client.ssl_clientsocket.recv(1024).decode())
     
 
