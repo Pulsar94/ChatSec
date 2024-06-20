@@ -15,8 +15,13 @@ class func:
         room = rooms.Room(data["data"]["name"], data["data"]["password"])
         if self.rooms.add_room(room):
             room.add_guest(socket, socket.getpeername())
-        client_data = jh.json_encode('room_created', '')
+            client_data = jh.json_encode('room_created', room.name)
+        else:
+            client_data = jh.json_encode('room_already_created', room.name)
         socket.send(client_data.encode())
+
+        
+    
 
     def connect_room(self, data, socket):
         print("Connecting to room")
