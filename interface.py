@@ -17,6 +17,7 @@ class ChatApp(tk.Tk):
         super().__init__()
         self.title("Chat P2P")
         self.geometry("800x600")
+        self.username = None
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
         self.frames = {}
@@ -50,6 +51,7 @@ class LoginPage(ttk.Frame):
         login_button.pack(pady=5, padx=10)
 
     def login(self):
+        self.controller.username = self.username.get()
         self.controller.show_frame("ChatPage")
         self.controller.frames["ChatPage"].initialize_client()
 
@@ -103,7 +105,8 @@ class ChatPage(ttk.Frame):
     def send_message(self):
         message = self.message_entry.get()
         if message and self.current_room:
-            self.client.send(jh.json_encode("room_message", {"room": self.current_room, "message": message}))
+            username = self.controller.username
+            self.client.send(jh.json_encode("room_message", {"room": self.current_room, "username": username, "message": message}))
             self.message_entry.delete(0, tk.END)
 
     def initialize_client(self):
@@ -150,10 +153,12 @@ class Client:
 
     def room_message_received(self, data, socket):
         room = data["data"]["room"]
+        username = data["data"]["username"]
         message = data["data"]["message"]
+        full_message = f"{username}: {message}" 
         if room not in self.chat_page.chat_histories:
             self.chat_page.chat_histories[room] = []
-        self.chat_page.chat_histories[room].append(message)
+        self.chat_page.chat_histories[room].append(full_message)
         if room == self.chat_page.current_room:
             self.chat_page.update_chat_history()
 

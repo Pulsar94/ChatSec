@@ -42,7 +42,7 @@ class func:
             client_data = jh.json_encode("room_found", "")
             socket.send(client_data.encode())
             print("Adding message to ", room.name)
-            room.add_message(data["data"]["message"])
+            room.add_message(data["data"]["message"], data["data"]["username"])
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())

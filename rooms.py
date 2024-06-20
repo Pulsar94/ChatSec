@@ -46,8 +46,9 @@ class Room:
     def get_guests(self):
         return self.guests
 
-    def add_message(self, message):
+    def add_message(self, message, username):
+        full_message = f"{username}: {message}"
         for sock in self.guests:
             print("Sending message to guest", list(sock.keys())[0])
-            data = jh.json_encode("room_message", {"room": self.name, "message": message})
+            data = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
             list(sock.values())[0].send(data.encode())
