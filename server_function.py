@@ -8,7 +8,10 @@ class func:
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_message": self.handle_room_message,
-            "room_disconnect": self.handle_room_disconnect
+            "room_disconnect": self.handle_room_disconnect,
+            "room_file": self.room_file,
+            "room_file_seg": self.room_file_seg,
+            "room_file_seg_end": self.room_file_seg_end,
         }
 
     def create_room(self, data, socket):
@@ -55,6 +58,36 @@ class func:
             socket.send(client_data.encode())
             if room.remove_guest(socket.getpeername()):
                 self.rooms.del_room(room)
+        else:
+            client_data = jh.json_encode("room_not_found", "")
+            socket.send(client_data.encode())
+    
+    def room_file(self, data, socket):
+        room = self.rooms.get_room(data["data"]["room"])
+        if room:
+            client_data = jh.json_encode("room_found", "")
+            socket.send(client_data.encode())
+            
+            print("Adding file to ", room.name)
+            room.add_file(data["data"]["file_name"])
+        else:
+            client_data = jh.json_encode("room_not_found", "")
+            socket.send(client_data.encode())
+    
+    def room_file_seg(self, data, socket):
+        room = self.rooms.get_room(data["data"]["room"])
+        if room:
+            print("Adding file segment to ", room.name)
+            room.add_file_seg(data["data"]["file_name"], data["data"]["file"])
+        else:
+            client_data = jh.json_encode("room_not_found", "")
+            socket.send(client_data.encode())
+    
+    def room_file_seg_end(self, data, socket):
+        room = self.rooms.get_room(data["data"]["room"])
+        if room:
+            print("File segment end received")
+            room.add_file_seg_end(data["data"]["file_name"])
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())
