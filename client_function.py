@@ -12,24 +12,25 @@ class func:
             "room_file": self.room_file,
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
+            "room_already_created": self.room_already_created,
         }
         self.files = {}
-        
+
     def room_created(self, data, socket):
         print("Room created")
-    
+
     def room_already_connected(self, data, socket):
         print("Room already connected")
-    
+
     def room_connected(self, data, socket):
         print("Room connected")
-    
+
     def room_found(self, data, socket):
         print("Room found")
-        
+
     def room_message(self, data, socket):
         print("message received: ", data["data"])
-        
+
     def room_file(self, data, socket):
         print("file received")
         file_name = data["data"]["file_name"]
@@ -46,6 +47,12 @@ class func:
             for seg in self.files[data["data"]["file_name"]]:
                 file.write(base64.b64decode(seg))
         
+    def room_already_created(self, data, socket):
+        print("Room already created")
+        room = data["data"]
+        client_data = jh.json_encode("connect_room", {"name": room})
+        socket.send(client_data.encode())
+
     
     
    

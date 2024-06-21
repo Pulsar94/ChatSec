@@ -1,11 +1,9 @@
-import socket
-import ssl
 import json_handler as jh
 
 class Rooms:
     def __init__(self):
         self.rooms = []
-    
+
     def add_room(self, room):
         if not self.get_room(room.name):
             self.rooms.append(room)
@@ -18,10 +16,10 @@ class Rooms:
         for r in self.rooms:
             if r.name == room:
                 return r
-    
+
     def get_rooms(self):
         return self.rooms
-    
+
     def del_room(self, room):
         self.rooms.remove(room)
 
@@ -37,26 +35,26 @@ class Room:
             if list(sock.keys())[0] == addr:
                 print("Guest already in room")
                 return False
-        self.guests.append({addr:guest})
+        self.guests.append({addr: guest})
         return True
 
     def remove_guest(self, addr):
         for sock in self.guests:
             if list(sock.keys())[0] == addr:
                 self.guests.remove(sock)
-                return
-        
         return self.guests == 0
+
 
     def get_guests(self):
         return self.guests
-    
-    def add_message(self, message):
+
+    def add_message(self, message, username):
+        full_message = f"{username}: {message}"
         for sock in self.guests:
             print("Sending message to guest", list(sock.keys())[0])
-            data = jh.json_encode("room_message", message)
+            data = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
             list(sock.values())[0].send(data.encode())
-    
+
     def add_file(self, filename):
         self.files[filename] = []
     
@@ -73,8 +71,3 @@ class Room:
                 list(sock.values())[0].send(data.encode())
                 seg_count += 1
             list(sock.values())[0].send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())
-            
-            
-        
-
-    

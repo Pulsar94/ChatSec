@@ -13,15 +13,19 @@ class func:
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
         }
-    
+
     def create_room(self, data, socket):
         room = rooms.Room(data["data"]["name"], data["data"]["password"])
         if self.rooms.add_room(room):
             room.add_guest(socket, socket.getpeername())
-
-        client_data = jh.json_encode('room_created', '')
+            client_data = jh.json_encode('room_created', room.name)
+        else:
+            client_data = jh.json_encode('room_already_created', room.name)
         socket.send(client_data.encode())
+
+        
     
+
     def connect_room(self, data, socket):
         print("Connecting to room")
         room = self.rooms.get_room(data["data"]["name"])
@@ -34,26 +38,24 @@ class func:
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())
-    
+
     def handle_room_message(self, data, socket):
         room = self.rooms.get_room(data["data"]["room"])
         if room:
             client_data = jh.json_encode("room_found", "")
             socket.send(client_data.encode())
-            
+
             print("Adding message to ", room.name)
-            room.add_message(data["data"]["message"])
-            
+            room.add_message(data["data"]["message"], data["data"]["username"])
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())
-    
+
     def handle_room_disconnect(self, data, socket):
         room = self.rooms.get_room(data["data"]["room"])
         if room:
             client_data = jh.json_encode("room_disconnected", "")
             socket.send(client_data.encode())
-            
             if room.remove_guest(socket.getpeername()):
                 self.rooms.del_room(room)
         else:
