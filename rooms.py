@@ -30,6 +30,7 @@ class Room:
         self.name = name
         self.password = password
         self.guests = []
+        self.files = {}
 
     def add_guest(self, guest, addr):
         for sock in self.guests:
@@ -47,7 +48,6 @@ class Room:
         
         return self.guests == 0
 
-
     def get_guests(self):
         return self.guests
     
@@ -56,5 +56,25 @@ class Room:
             print("Sending message to guest", list(sock.keys())[0])
             data = jh.json_encode("room_message", message)
             list(sock.values())[0].send(data.encode())
+    
+    def add_file(self, filename):
+        self.files[filename] = []
+    
+    def add_file_seg(self, filename, segment):
+        self.files[filename].append(segment)
+    
+    def add_file_seg_end(self, filename):
+        for sock in self.guests:
+            seg_count = 0
+            list(sock.values())[0].send(jh.json_encode("room_file", {"file_name": filename}).encode())
+            for seg in self.files[filename]:
+                print("Sending file segment to guest", list(sock.keys())[0])
+                data = jh.json_encode("room_file_seg", {"file_name": filename, "seg": seg_count, "file": seg})
+                list(sock.values())[0].send(data.encode())
+                seg_count += 1
+            list(sock.values())[0].send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())
+            
+            
+        
 
     
