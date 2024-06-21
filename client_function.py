@@ -31,7 +31,6 @@ class func:
         room = data["data"]
         client_data = jh.json_encode("connect_room", {"name": room})
         socket.send(client_data.encode())
-
     
     
    
