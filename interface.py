@@ -84,8 +84,6 @@ class ChatPage(ttk.Frame):
         self.message_entry.pack(fill="x", pady=5, padx=10)
         send_button = ttk.Button(right_frame, text="Envoyer", command=self.send_message)
         send_button.pack(pady=5, padx=10)
-
-        # Ajouter un bouton pour envoyer un fichier
         send_file_button = ttk.Button(right_frame, text="Envoyer un fichier", command=self.select_and_send_file)
         send_file_button.pack(pady=5, padx=10)
 
@@ -119,7 +117,7 @@ class ChatPage(ttk.Frame):
     def select_and_send_file(self):
         file_path = filedialog.askopenfilename()
         if file_path and self.current_room:
-            self.client.send_file(file_path, self.current_room)
+            self.client.send_file(file_path, self.current_room,username=self.controller.username)
 
     def initialize_client(self):
         self.client = Client(self)
@@ -167,7 +165,7 @@ class Client:
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
 
-    def send_file(self, file_path, room):
+    def send_file(self, file_path, room, username):
         file_name = os.path.basename(file_path)
         self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name}).encode())
         with open(file_path, 'rb') as file:
@@ -181,6 +179,9 @@ class Client:
                 seg_count += 1
             print("Sending file segment: end")
             self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": file_name}).encode())
+        message = f"{username} send file {file_name}"
+        self.send(jh.json_encode("room_message", {"room": room, "username": username, "message": message}))
+
 
     def room_message_received(self, data, socket):
         room = data["data"]["room"]
@@ -193,12 +194,10 @@ class Client:
         if room == self.chat_page.current_room:
             self.chat_page.update_chat_history()
 
+
     def room_file_received(self, data, socket):
         file_name = data["data"]["file_name"]
         self.files[file_name] = []
-        self.chat_page.chat_histories[self.chat_page.current_room].append(f"Receiving file: {file_name}")
-        if self.chat_page.current_room:
-            self.chat_page.update_chat_history()
 
     def room_file_seg_received(self, data, socket):
         file_name = data["data"]["file_name"]
@@ -209,9 +208,6 @@ class Client:
         with open(file_name, 'wb') as file:
             for seg in self.files[file_name]:
                 file.write(base64.b64decode(seg))
-        self.chat_page.chat_histories[self.chat_page.current_room].append(f"File received: {file_name}")
-        if self.chat_page.current_room:
-            self.chat_page.update_chat_history()
 
     def __del__(self):
         self.clientsocket.close()
