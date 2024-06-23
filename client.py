@@ -48,22 +48,21 @@ class Client:
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
     
-    def send_file(self, file_path, room):
+    def send_file(self, file_path, room, username):
         file_name = os.path.basename(file_path)
-        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": "ret_"+file_name}).encode())
+        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name, "username": username}).encode())
         with open(file_path, 'rb') as file:
             seg_count = 0
             seg = file.read(512)
             while seg:
                 print("Sending file segment: ", seg_count)
                 encoded_seg = base64.b64encode(seg).decode('utf-8')
-                self.ssl_clientsocket.send(jh.json_encode("room_file_seg", {"room": room, "seg": seg_count, "file_name": "ret_"+file_name, "file": encoded_seg}).encode())
+                self.ssl_clientsocket.send(jh.json_encode("room_file_seg", {"room": room, "seg": seg_count, "file_name": file_name, "file": encoded_seg}).encode())
                 seg = file.read(512)
                 seg_count += 1
             print("Sending file segment: end")
-            self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": "ret_"+file_name}).encode())
+            self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": file_name}).encode())
 
-                  
     def __del__(self):
         self.clientsocket.close()
 
@@ -78,9 +77,7 @@ def main():
     
     client.send(jh.json_encode("connect_room", {"name": "room1"}))
 
-    #client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
-    
-    client.send_file("test.pdf", "room1")
+    client.send_file("test.pdf", "room1", "A")
     
     client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
     
