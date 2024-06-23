@@ -32,25 +32,27 @@ class func:
         print("message received: ", data["data"])
 
     def room_file(self, data, socket):
-        print("Receiving file: ", data["data"]["file_name"])
+        print("file received")
         file_name = data["data"]["file_name"]
         self.files[file_name] = []
-        if "username" in data["data"]:
-            print(f"{data['data']['username']} sent file: {file_name}")
-
+    
     def room_file_seg(self, data, socket):
         print("file segment received")
         file_name = data["data"]["file_name"]
         self.files[file_name].append(data["data"]["file"])
-
+    
     def room_file_seg_end(self, data, socket):
         print("file segment end received")
         with open(data["data"]["file_name"], 'wb') as file:
             for seg in self.files[data["data"]["file_name"]]:
                 file.write(base64.b64decode(seg))
-
+        
     def room_already_created(self, data, socket):
         print("Room already created")
         room = data["data"]
         client_data = jh.json_encode("connect_room", {"name": room})
         socket.send(client_data.encode())
+
+    
+    
+   

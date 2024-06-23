@@ -1,13 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk
 import threading as thread
 import socket
 import ssl
 import json_handler as jh
 from client_function import func
 from certificate import get_or_generate_cert
-import base64
-import os
 
 CERT_FILE_SERVER = "key/server-cert.pem"
 CERT_FILE_CLIENT = "key/client-cert.pem"
@@ -84,11 +82,6 @@ class ChatPage(ttk.Frame):
         self.message_entry.pack(fill="x", pady=5, padx=10)
         send_button = ttk.Button(right_frame, text="Envoyer", command=self.send_message)
         send_button.pack(pady=5, padx=10)
-
-        # Ajouter un bouton pour envoyer un fichier
-        send_file_button = ttk.Button(right_frame, text="Envoyer un fichier", command=self.select_and_send_file)
-        send_file_button.pack(pady=5, padx=10)
-
         self.current_room = None
 
     def on_room_select(self, event):
@@ -116,11 +109,6 @@ class ChatPage(ttk.Frame):
             self.client.send(jh.json_encode("room_message", {"room": self.current_room, "username": username, "message": message}))
             self.message_entry.delete(0, tk.END)
 
-    def select_and_send_file(self):
-        file_path = filedialog.askopenfilename()
-        if file_path and self.current_room:
-            self.client.send_file(file_path, self.current_room)
-
     def initialize_client(self):
         self.client = Client(self)
         self.client.connect(socket.gethostname(), 5000)
@@ -137,10 +125,6 @@ class Client:
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func = func()
         self.func.tag["room_message"] = self.room_message_received
-        self.func.tag["room_file"] = self.room_file_received
-        self.func.tag["room_file_seg"] = self.room_file_seg_received
-        self.func.tag["room_file_seg_end"] = self.room_file_seg_end_received
-        self.files = {}
 
     def connect(self, host, port):
         self.ssl_clientsocket = self.context.wrap_socket(self.clientsocket, server_hostname=host)
@@ -167,21 +151,6 @@ class Client:
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
 
-    def send_file(self, file_path, room):
-        file_name = os.path.basename(file_path)
-        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name}).encode())
-        with open(file_path, 'rb') as file:
-            seg_count = 0
-            seg = file.read(512)
-            while seg:
-                print("Sending file segment: ", seg_count)
-                encoded_seg = base64.b64encode(seg).decode('utf-8')
-                self.ssl_clientsocket.send(jh.json_encode("room_file_seg", {"room": room, "seg": seg_count, "file_name": file_name, "file": encoded_seg}).encode())
-                seg = file.read(512)
-                seg_count += 1
-            print("Sending file segment: end")
-            self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": file_name}).encode())
-
     def room_message_received(self, data, socket):
         room = data["data"]["room"]
         username = data["data"]["username"]
@@ -193,29 +162,7 @@ class Client:
         if room == self.chat_page.current_room:
             self.chat_page.update_chat_history()
 
-    def room_file_received(self, data, socket):
-        file_name = data["data"]["file_name"]
-        self.files[file_name] = []
-        self.chat_page.chat_histories[self.chat_page.current_room].append(f"Receiving file: {file_name}")
-        if self.chat_page.current_room:
-            self.chat_page.update_chat_history()
-
-    def room_file_seg_received(self, data, socket):
-        file_name = data["data"]["file_name"]
-        self.files[file_name].append(data["data"]["file"])
-
-    def room_file_seg_end_received(self, data, socket):
-        file_name = data["data"]["file_name"]
-        with open(file_name, 'wb') as file:
-            for seg in self.files[file_name]:
-                file.write(base64.b64decode(seg))
-        self.chat_page.chat_histories[self.chat_page.current_room].append(f"File received: {file_name}")
-        if self.chat_page.current_room:
-            self.chat_page.update_chat_history()
-
-    def __del__(self):
-        self.clientsocket.close()
-
 if __name__ == "__main__":
     app = ChatApp()
     app.mainloop()
+
