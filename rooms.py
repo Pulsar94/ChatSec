@@ -18,6 +18,7 @@ class Rooms:
                 return r
 
     def get_rooms(self):
+        print(self.rooms)
         return self.rooms
 
     def del_room(self, room):

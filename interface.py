@@ -21,7 +21,7 @@ class ChatApp(tk.Tk):
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
         self.frames = {}
-        for F in (LoginPage, ChatPage):
+        for F in (LoginPage, RoomPage, ChatPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -52,30 +52,105 @@ class LoginPage(ttk.Frame):
 
     def login(self):
         self.controller.username = self.username.get()
-        self.controller.show_frame("ChatPage")
-        self.controller.frames["ChatPage"].initialize_client()
+        self.controller.show_frame("RoomPage")
+        self.controller.frames["RoomPage"].initialize_client()
 
-class ChatPage(ttk.Frame):
+class RoomPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
         self.chat_histories = {}
         self.client = None
+        self.room_list = None
         self.create_widgets()
 
     def create_widgets(self):
-        left_frame = ttk.Frame(self, width=200)
-        left_frame.pack(side="left", fill="y")
+        label = ttk.Label(self, text="Liste des rooms")
+        label.pack(pady=10, padx=10)
+        self.room_list = tk.Listbox(self)
+        self.room_list.pack(fill="both", expand=True, pady=5, padx=10)
+        join_button = ttk.Button(self, text="Join", command=self.join_room)
+        join_button.pack(pady=5, padx=10)
+        create_button = ttk.Button(self, text="Create", command=self.createwindow)
+        create_button.pack(pady=5, padx=10)
+        actualise_button = ttk.Button(self, text=chr(0x21BB), command=self.actualise)
+        actualise_button.pack(side="left",pady=5)
+
+
+    def actualise(self):
+        self.client.send(jh.json_encode("get_rooms", {}))
+        print(self.client.send(jh.json_encode("get_rooms", {})))
+
+    def createwindow(self):
+        self.popup = tk.Toplevel(self)
+        self.popup.title("Create Room")
+        self.popup.geometry("300x200")  # Width x Height
+
+        label = ttk.Label(self.popup, text="Enter room name:")
+        label.pack(pady=10, padx=10)
+        
+
+        self.room_name_entry = ttk.Entry(self.popup)
+        self.room_name_entry.insert(0, "Room Name")
+        self.room_name_entry.pack(pady=5, padx=10)
+
+        label = ttk.Label(self.popup, text="Enter room password:")
+        label.pack(pady=10, padx=10)
+
+        self.room_password_entry = ttk.Entry(self.popup)
+        self.room_password_entry.insert(0, "Password")
+        self.room_password_entry.pack(pady=5, padx=10)
+                                                                    #self.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
+        create_room_button = ttk.Button(self.popup, text="Create Room", command=lambda :self.create_room(self.room_name_entry.get(),self.room_password_entry.get()))
+        create_room_button.pack(pady=5, padx=10)
+
+        # Optional: Focus on the popup and wait until it is closed
+        self.popup.grab_set()
+        self.popup.focus_set()
+        self.popup.wait_window()
+
+       
+    def create_room(self,room_name,room_password):
+        self.controller.frames["RoomPage"].client.send(jh.json_encode("create_room", {"name": room_name, "password": room_password}))
+        self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
+        self.controller.frames["RoomPage"].chat_histories[room_name] = []
+        self.popup.destroy()
+                
+
+    def initialize_client(self):
+        self.client = Client(self)
+        self.client.connect(socket.gethostname(), 5000)
+        thread.Thread(target=self.client.listen).start()
+
+    def join_room(self):
+        selected_indices = self.room_list.curselection()
+        if selected_indices:
+            selected_index = selected_indices[0]
+            self.selected_room = self.room_list.get(selected_index)
+            self.controller.show_frame("ChatPage")
+            self.controller.frames["ChatPage"].current_room = self.selected_room
+            self.controller.frames["ChatPage"].update_chat_history()
+            self.controller.frames["ChatPage"].initialize_client()
+            self.client.send(jh.json_encode("join_room", {"room": self.selected_room}))
+
+    def update_room_history(self):
+        self.controller.frames["ChatPage"].update_chat_history()
+
+class ChatPage(ttk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.chat_histories = self.controller.frames["RoomPage"].chat_histories
+        self.client = None
+        self.create_widgets()
+
+    def create_widgets(self):
         right_frame = ttk.Frame(self)
-        right_frame.pack(side="right", fill="both", expand=True)
-        user_list_label = ttk.Label(left_frame, text="Liste des rooms")
-        user_list_label.pack(pady=10, padx=10)
-        self.user_list = tk.Listbox(left_frame)
-        self.user_list.pack(fill="y", expand=True, pady=5, padx=10)
-        self.user_list.bind("<<ListboxSelect>>", self.on_room_select)
+        right_frame.pack(fill="both", expand=True)
         chat_label = ttk.Label(right_frame, text="Chat")
         chat_label.pack(pady=10, padx=10)
         self.chat_text = tk.Text(right_frame, state="disabled")
+        self.chat_text.see(tk.END)
         self.chat_text.pack(fill="both", expand=True, pady=5, padx=10)
         self.message_entry = ttk.Entry(right_frame)
         self.message_entry.bind("<Return>", self.clavier)
@@ -131,9 +206,9 @@ class Client:
         try:
             self.ssl_clientsocket.connect((host, port))
             print("Connected to server {} on port {}".format(host, port))
-            self.chat_page.user_list.insert(tk.END, "room1")
-            self.chat_page.chat_histories["room1"] = []
-            self.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
+            # self.chat_page.user_list.insert(tk.END, "room1")
+            # self.chat_page.chat_histories["room1"] = []
+            # self.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
         except Exception as e:
             print("Connection failed: ", e)
 
@@ -159,8 +234,8 @@ class Client:
         if room not in self.chat_page.chat_histories:
             self.chat_page.chat_histories[room] = []
         self.chat_page.chat_histories[room].append(full_message)
-        if room == self.chat_page.current_room:
-            self.chat_page.update_chat_history()
+        if room == self.chat_page.selected_room:
+            self.chat_page.update_room_history()
 
 if __name__ == "__main__":
     app = ChatApp()

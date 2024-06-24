@@ -8,7 +8,8 @@ class func:
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_message": self.handle_room_message,
-            "room_disconnect": self.handle_room_disconnect
+            "room_disconnect": self.handle_room_disconnect,
+            "get_rooms": self.get_rooms
         }
 
     def create_room(self, data, socket):
@@ -20,7 +21,15 @@ class func:
             client_data = jh.json_encode('room_already_created', room.name)
         socket.send(client_data.encode())
 
-        
+    def get_rooms(self, data, socket):
+        rooms = self.rooms.get_rooms()
+        if rooms:
+            for r in rooms:
+                print(r.name)
+                client_data = jh.json_encode("rooms", r.name)
+        else:
+            client_data = jh.json_encode("no_rooms", "")
+        socket.send(client_data.encode())
     
 
     def connect_room(self, data, socket):
