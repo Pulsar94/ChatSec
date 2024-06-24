@@ -6,6 +6,7 @@ from client_function import func
 from certificate import get_or_generate_cert
 import base64
 import os
+import hashlib
 
 CERT_FILE_SERVER = "key/server-cert.pem"
 
@@ -47,6 +48,9 @@ class Client:
         
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
+
+    def hashed_password(self, password):
+        return hashlib.sha256(password.encode()).hexdigest()
     
     def send_file(self, file_path, room):
         file_name = os.path.basename(file_path)
@@ -74,14 +78,16 @@ def main():
     
     print("Client is ready to send to server")
 
+    client.send(jh.json_encode("authentification", {"username": "tibo@secu.hack", "password": f"{client.hashed_password('1234')}"}))
+
     client.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
     
     client.send(jh.json_encode("connect_room", {"name": "room1"}))
 
-    #client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
+    #client.send(jh.json_encode("room_message", {"room": "room1", "username":"tibo", "message": "Hello, world!"}))
+
+    #client.send_file("test.pdf", "room1")
     
-    client.send_file("test.pdf", "room1")
-    
-    client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
+    #client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
     
 main()

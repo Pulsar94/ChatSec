@@ -1,10 +1,14 @@
 import rooms
 import json_handler as jh
+import authenticator
+import hashlib
 
 class func:
     def __init__(self):
         self.rooms = rooms.Rooms()
+        self.users_authentification = authenticator.Authenticator().users_authentification
         self.tag = {
+            "authentification": self.authentification,
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_message": self.handle_room_message,
@@ -94,4 +98,18 @@ class func:
                     guest_socket.send(jh.json_encode("room_file_seg_end", {"file_name": data["data"]["file_name"]}).encode())
         else:
             client_data = jh.json_encode("room_not_found", "")
+            socket.send(client_data.encode())
+
+    def authentification(self, data, socket):
+        # here we'll integrate the authentication process
+        # will contain json query to check serverside database for client authentification
+        if data["data"]["username"] in self.users_authentification:
+            if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
+                client_data = jh.json_encode("authenticated", "")
+                socket.send(client_data.encode())
+            else:
+                client_data = jh.json_encode("authentication_failed", "")
+                socket.send(client_data.encode())
+        else:
+            client_data = jh.json_encode("authentication_failed", "")
             socket.send(client_data.encode())
