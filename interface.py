@@ -1,6 +1,8 @@
 import tkinter as tk
-from tkinter import ttk
-import threading as thread
+from tkinter import ttk, filedialog, messagebox
+import threading
+import base64
+import os
 import socket
 import ssl
 import json_handler as jh
@@ -82,6 +84,9 @@ class ChatPage(ttk.Frame):
         self.message_entry.pack(fill="x", pady=5, padx=10)
         send_button = ttk.Button(right_frame, text="Envoyer", command=self.send_message)
         send_button.pack(pady=5, padx=10)
+        send_file_button = ttk.Button(right_frame, text="Envoyer un fichier", command=self.select_and_send_file)
+        send_file_button.pack(pady=5, padx=10)
+
         self.current_room = None
 
     def on_room_select(self, event):
@@ -109,10 +114,16 @@ class ChatPage(ttk.Frame):
             self.client.send(jh.json_encode("room_message", {"room": self.current_room, "username": username, "message": message}))
             self.message_entry.delete(0, tk.END)
 
+    def select_and_send_file(self):
+        file_path = filedialog.askopenfilename()
+        if file_path and self.current_room:
+            username = self.controller.username
+            self.client.send_file(file_path, self.current_room, username)
+
     def initialize_client(self):
         self.client = Client(self)
         self.client.connect(socket.gethostname(), 5000)
-        thread.Thread(target=self.client.listen).start()
+        threading.Thread(target=self.client.listen).start()
 
 class Client:
     def __init__(self, chat_page):
@@ -125,6 +136,10 @@ class Client:
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func = func()
         self.func.tag["room_message"] = self.room_message_received
+        self.func.tag["room_file"] = self.room_file_received
+        self.func.tag["room_file_seg"] = self.room_file_seg_received
+        self.func.tag["room_file_seg_end"] = self.room_file_seg_end_received
+        self.files = {}
 
     def connect(self, host, port):
         self.ssl_clientsocket = self.context.wrap_socket(self.clientsocket, server_hostname=host)
@@ -151,6 +166,21 @@ class Client:
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
 
+    def send_file(self, file_path, room, username):
+        file_name = os.path.basename(file_path)
+        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name}).encode())
+        with open(file_path, 'rb') as file:
+            seg_count = 0
+            seg = file.read(512)
+            while seg:
+                print("Sending file segment: ", seg_count)
+                encoded_seg = base64.b64encode(seg).decode('utf-8')
+                self.ssl_clientsocket.send(jh.json_encode("room_file_seg", {"room": room, "seg": seg_count, "file_name": file_name, "file": encoded_seg}).encode())
+                seg = file.read(512)
+                seg_count += 1
+            print("Sending file segment: end")
+            self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": file_name}).encode())
+    
     def room_message_received(self, data, socket):
         room = data["data"]["room"]
         username = data["data"]["username"]
@@ -161,6 +191,83 @@ class Client:
         self.chat_page.chat_histories[room].append(full_message)
         if room == self.chat_page.current_room:
             self.chat_page.update_chat_history()
+
+    def room_file_received(self, data, socket):
+        file_name = data["data"]["file_name"]
+        self.files[file_name] = []
+
+    def room_file_seg_received(self, data, socket):
+        file_name = data["data"]["file_name"]
+        self.files[file_name].append(data["data"]["file"])
+
+    def room_file_seg_end_received(self, data, socket):
+        file_name = data["data"]["file_name"]
+        file_data = self.files[file_name]
+
+        # Appeler on_file_received dans le thread principal
+        self.chat_page.controller.after(0, on_file_received, self.chat_page.controller, file_name, file_data)
+        
+        del self.files[file_name]
+
+    def __del__(self):
+        self.clientsocket.close()
+
+class CountdownDialog(tk.Toplevel):
+    def __init__(self, parent, file_name, file_data, timeout=30):
+        super().__init__(parent)
+        self.title("File Received")
+        self.file_name = file_name
+        self.file_data = file_data
+        self.timeout = timeout
+        self.result = None
+        
+        self.label = ttk.Label(self, text=f"Do you want to receive the file {file_name}?")
+        self.label.pack(pady=10)
+
+        self.countdown_label = ttk.Label(self, text=f"Time remaining: {self.timeout} seconds")
+        self.countdown_label.pack(pady=10)
+
+        self.button_frame = ttk.Frame(self)
+        self.button_frame.pack(pady=10)
+        
+        self.accept_button = ttk.Button(self.button_frame, text="Accept", command=self.accept)
+        self.accept_button.grid(row=0, column=0, padx=5)
+        
+        self.decline_button = ttk.Button(self.button_frame, text="Decline", command=self.decline)
+        self.decline_button.grid(row=0, column=1, padx=5)
+        
+        self.protocol("WM_DELETE_WINDOW", self.decline)  # Handle window close button
+        
+        self.start_countdown()
+
+    def start_countdown(self):
+        if self.timeout > 0:
+            self.timeout -= 1
+            self.countdown_label.config(text=f"Time remaining: {self.timeout} seconds")
+            self.after(1000, self.start_countdown)
+        else:
+            self.decline()
+
+    def accept(self):
+        self.result = True
+        self.destroy()
+
+    def decline(self):
+        self.result = False
+        self.destroy()
+
+def on_file_received(parent, file_name, file_data):
+    dialog = CountdownDialog(parent, file_name, file_data)
+    parent.wait_window(dialog)
+    if dialog.result:
+        save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")
+        if save_path:
+            with open(save_path, 'wb') as file:
+                for seg in file_data:
+                    file.write(base64.b64decode(seg))
+        print("File accepted and saved")
+    else:
+        print("File declined")
 
 if __name__ == "__main__":
     app = ChatApp()
