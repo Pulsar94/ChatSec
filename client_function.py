@@ -13,6 +13,7 @@ class func:
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
             "room_already_created": self.room_already_created,
+            "room_wrong_password": self.room_wrong_password,
         }
         self.files = {}
 
@@ -24,6 +25,9 @@ class func:
 
     def room_connected(self, data, socket):
         print("Room connected")
+    
+    def room_wrong_password(self, data, socket):
+        print("Wrong password")
 
     def room_found(self, data, socket):
         print("Room found")

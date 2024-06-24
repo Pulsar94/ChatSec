@@ -15,7 +15,7 @@ class func:
         }
 
     def create_room(self, data, socket):
-        room = rooms.Room(data["data"]["name"], data["data"]["password"])
+        room = rooms.Room(data["data"]["room"], data["data"]["password"])
         if self.rooms.add_room(room):
             room.add_guest(socket, socket.getpeername())
             client_data = jh.json_encode('room_created', room.name)
@@ -25,9 +25,12 @@ class func:
 
     def connect_room(self, data, socket):
         print("Connecting to room")
-        room = self.rooms.get_room(data["data"]["name"])
+        room = self.rooms.get_room(data["data"]["room"])
+        passw = data["data"]["password"]
         if room:
-            if room.add_guest(socket, socket.getpeername()):
+            if room.password and room.password != passw and passw != "":
+                client_data = jh.json_encode("room_wrong_password", "")
+            elif room.add_guest(socket, socket.getpeername()):
                 client_data = jh.json_encode("room_already_connected", "")
             else:
                 client_data = jh.json_encode("room_connected", "")

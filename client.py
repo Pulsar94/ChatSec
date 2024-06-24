@@ -6,6 +6,7 @@ from client_function import func
 from certificate import get_or_generate_cert
 import base64
 import os
+import hashlib
 
 CERT_FILE_SERVER = "key/server-cert.pem"
 
@@ -44,7 +45,19 @@ class Client:
                     if jh.compare_tag_from_socket(data, tag, callback, self.ssl_clientsocket):
                         print("Executed callback for tag", tag)
                         break
-        
+    
+    def create_room(self, room, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.ssl_clientsocket.send(jh.json_encode("create_room", {"room": room, "password": hashed_password}).encode())
+    
+    def connect_room(self, room, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.ssl_clientsocket.send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}).encode())
+    
     def send(self, message):
         self.ssl_clientsocket.send(message.encode())
     
@@ -71,17 +84,17 @@ def main():
     client = Client()
     client.connect(socket.gethostname(), 5000)
     thread.Thread(target=client.listen).start()
-    
+
     print("Client is ready to send to server")
 
-    client.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
-    
-    client.send(jh.json_encode("connect_room", {"name": "room1"}))
+    #client.create_room("room1", "1234")
 
-    #client.send(jh.json_encode("room_message", {"room": "room1", "message": "Hello, world!"}))
-    
-    client.send_file("test.pdf", "room1")
-    
-    client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
+    client.connect_room("room1", "1234")
+
+    client.send(jh.json_encode("room_message", {"room": "room1", "username": "yes", "message": "Hello, world!"}))
+
+    #client.send_file("test.pdf", "room1")
+
+    #client.send(jh.json_encode("room_disconnect", {"room": "room1"}))
     
 main()
