@@ -13,6 +13,7 @@ class func:
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
             "room_already_created": self.room_already_created,
+            "file_accept_request": self.file_accept_request  # Nouvelle fonction
         }
         self.files = {}
 
@@ -46,13 +47,18 @@ class func:
         with open(data["data"]["file_name"], 'wb') as file:
             for seg in self.files[data["data"]["file_name"]]:
                 file.write(base64.b64decode(seg))
-        
+    
     def room_already_created(self, data, socket):
         print("Room already created")
         room = data["data"]
         client_data = jh.json_encode("connect_room", {"name": room})
         socket.send(client_data.encode())
 
-    
-    
-   
+    def file_accept_request(self, data, socket):  # Nouvelle fonction
+        username = data["data"]["username"]
+        file_name = data["data"]["file_name"]
+        response = input(f"{username} wants to send you the file {file_name}. Accept? (yes/no): ")
+        if response.lower() == 'yes':
+            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": True}).encode())
+        else:
+            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": False}).encode())
