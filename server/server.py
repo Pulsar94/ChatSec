@@ -1,10 +1,10 @@
 import socket
-import ssl
-import rooms
-import json_handler as jh
+from shared.rsa_handler import RSAHandler as rsa
+import server.rooms as rooms
+import shared.json_handler as jh
 import threading as thread
-from server_function import func
-from certificate import get_or_generate_cert
+from server.server_function import func
+from shared.certificate import get_or_generate_cert
 
 CERT_FILE_SERVER = "key/server-cert.pem"
 KEY_FILE_SERVER = "key/server-key.pem"
@@ -14,11 +14,9 @@ CERT_EXPIRATION_DAYS = 1
 class Server:
     def __init__(self):
         self.rooms = rooms.Rooms()
-        self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         cert, key = get_or_generate_cert(CERT_FILE_SERVER, KEY_FILE_SERVER, CERT_EXPIRATION_DAYS)
-        self.context.load_cert_chain(certfile=cert, keyfile=key)
         
-        self.func = func()
+        self.func = func(self)
         
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind((socket.gethostname(), 5000))
@@ -30,8 +28,8 @@ class Server:
             print("Waiting for connection")
             (clientsocket, address) = self.serversocket.accept()
             print("Connection from", address, ". Creating new thread")
-            stream = self.context.wrap_socket(clientsocket, server_side=True)
-            thread.Thread(target=self.handle_client, args=(stream, address)).start()
+
+            thread.Thread(target=self.handle_client, args=(clientsocket, address)).start()
     
     def handle_client(self, stream, address):
         while True:

@@ -5,9 +5,9 @@ import base64
 import os
 import socket
 import ssl
-import json_handler as jh
-from client_function import func
-from certificate import get_or_generate_cert
+import shared.json_handler as jh
+from client.client_function import func
+from shared.certificate import get_or_generate_cert
 import hashlib
 
 CERT_FILE_SERVER = "key/server-cert.pem"

@@ -1,5 +1,5 @@
 import rsa
-from certificate import get_or_generate_cert
+from shared.certificate import get_or_generate_cert
 
 class RSAHandler:
     def __init__(self, cert_file, key_file, cert_expiration_days):
