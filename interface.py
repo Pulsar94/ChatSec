@@ -257,6 +257,12 @@ class CountdownDialog(tk.Toplevel):
         
         self.start_countdown()
 
+        # Center the dialog on the parent window
+        self.update_idletasks()
+        x = parent.winfo_rootx() + parent.winfo_width() // 2 - self.winfo_width() // 2
+        y = parent.winfo_rooty() + parent.winfo_height() // 2 - self.winfo_height() // 2
+        self.geometry(f"+{x}+{y}")
+
     def start_countdown(self):
         if self.timeout > 0:
             self.timeout -= 1
