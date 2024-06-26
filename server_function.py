@@ -112,7 +112,7 @@ class func:
             print(f"Dropping file {file_name} due to timeout")
             del self.pending_files[file_name]
 
-def authentification(self, data, socket):
+    def authentification(self, data, socket):
         """
         This function is used to authenticate a user
         :param data:
