@@ -139,6 +139,7 @@ class Client:
         self.func.tag["room_file"] = self.room_file_received
         self.func.tag["room_file_seg"] = self.room_file_seg_received
         self.func.tag["room_file_seg_end"] = self.room_file_seg_end_received
+        self.func.tag["file_accept_request"] = self.file_accept_request  # Nouvelle fonction
         self.files = {}
 
     def connect(self, host, port):
@@ -168,7 +169,7 @@ class Client:
 
     def send_file(self, file_path, room, username):
         file_name = os.path.basename(file_path)
-        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name}).encode())
+        self.ssl_clientsocket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name, "username": username}).encode())
         with open(file_path, 'rb') as file:
             seg_count = 0
             seg = file.read(512)
@@ -194,34 +195,50 @@ class Client:
 
     def room_file_received(self, data, socket):
         file_name = data["data"]["file_name"]
+        print(f"Initializing file reception for {file_name}")
         self.files[file_name] = []
 
     def room_file_seg_received(self, data, socket):
         file_name = data["data"]["file_name"]
+        if file_name not in self.files:
+            self.files[file_name] = []  # Initialize the file list if not already done
         self.files[file_name].append(data["data"]["file"])
+        print(f"Received segment for {file_name}")
 
     def room_file_seg_end_received(self, data, socket):
         file_name = data["data"]["file_name"]
-        file_data = self.files[file_name]
+        file_data = self.files.get(file_name)
 
-        # Appeler on_file_received dans le thread principal
-        self.chat_page.controller.after(0, on_file_received, self.chat_page.controller, file_name, file_data)
-        
-        del self.files[file_name]
+        if file_data is not None:
+            # Appeler on_file_received dans le thread principal
+            self.chat_page.controller.after(0, on_file_received, self.chat_page.controller, file_name, file_data)
+            del self.files[file_name]
+            print(f"File reception completed for {file_name}")
+        else:
+            print(f"Error: no data found for file {file_name}")
+
+    def file_accept_request(self, data, socket):
+        username = data["data"]["username"]
+        file_name = data["data"]["file_name"]
+        dialog = CountdownDialog(self.chat_page.controller, file_name, username)
+        self.chat_page.controller.wait_window(dialog)
+        if dialog.result:
+            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": True}).encode())
+        else:
+            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": False}).encode())
 
     def __del__(self):
         self.clientsocket.close()
 
 class CountdownDialog(tk.Toplevel):
-    def __init__(self, parent, file_name, file_data, timeout=30):
+    def __init__(self, parent, file_name, username, timeout=30):
         super().__init__(parent)
         self.title("File Received")
         self.file_name = file_name
-        self.file_data = file_data
         self.timeout = timeout
         self.result = None
         
-        self.label = ttk.Label(self, text=f"Do you want to receive the file {file_name}?")
+        self.label = ttk.Label(self, text=f"{username} wants to send you the file {file_name}. Do you want to accept?")
         self.label.pack(pady=10)
 
         self.countdown_label = ttk.Label(self, text=f"Time remaining: {self.timeout} seconds")
@@ -240,6 +257,12 @@ class CountdownDialog(tk.Toplevel):
         
         self.start_countdown()
 
+        # Center the dialog on the parent window
+        self.update_idletasks()
+        x = parent.winfo_rootx() + parent.winfo_width() // 2 - self.winfo_width() // 2
+        y = parent.winfo_rooty() + parent.winfo_height() // 2 - self.winfo_height() // 2
+        self.geometry(f"+{x}+{y}")
+
     def start_countdown(self):
         if self.timeout > 0:
             self.timeout -= 1
@@ -257,14 +280,11 @@ class CountdownDialog(tk.Toplevel):
         self.destroy()
 
 def on_file_received(parent, file_name, file_data):
-    dialog = CountdownDialog(parent, file_name, file_data)
-    parent.wait_window(dialog)
-    if dialog.result:
-        save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")
-        if save_path:
-            with open(save_path, 'wb') as file:
-                for seg in file_data:
-                    file.write(base64.b64decode(seg))
+    save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")
+    if save_path:
+        with open(save_path, 'wb') as file:
+            for seg in file_data:
+                file.write(base64.b64decode(seg))
         print("File accepted and saved")
     else:
         print("File declined")
@@ -272,4 +292,3 @@ def on_file_received(parent, file_name, file_data):
 if __name__ == "__main__":
     app = ChatApp()
     app.mainloop()
-
