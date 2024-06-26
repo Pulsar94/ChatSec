@@ -11,11 +11,17 @@ class func_server:
             "room_found": self.room_found,
             "room_already_created": self.room_already_created,
             "room_wrong_password": self.room_wrong_password,
+            "debug": self.debug,
         }
         self.files = {}
 
     def room_created(self, data, socket):
-        print("Room created")
+        host = socket.getpeername()[0]
+        print("Room created on host", host)
+        port = data["data"]["port"]
+        name = data["data"]["name"]
+        print("Room created on port", port)
+        self.client.rm_connect(host, port, name)
 
     def room_already_connected(self, data, socket):
         print("Room already connected")
@@ -34,6 +40,11 @@ class func_server:
         room = data["data"]
         client_data = jh.json_encode("connect_room", {"name": room})
         socket.send(client_data.encode())
+    
+    def debug(self, data, socket):
+        print("Debug: ", data["data"])
+        client_data = jh.json_encode("debug", "hello")
+        self.client.sv_send(client_data)
 
 class func_room:
     def __init__(self, client):

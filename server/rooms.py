@@ -37,8 +37,9 @@ class Room:
         self.guests = []
         self.files = {}
 
-        self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        cert, key = get_or_generate_cert("key/"+name+"-cert.pem", "key/"+name+"-server.pem", CERT_EXPIRATION_DAYS)
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        cert, key = "key/"+name+"-cert.pem", "key/"+name+"-server.pem"
+        get_or_generate_cert(cert, key, CERT_EXPIRATION_DAYS)
         self.context.load_cert_chain(certfile=cert, keyfile=key)
         
         self.func = func(self)
@@ -54,9 +55,10 @@ class Room:
             (clientsocket, address) = self.room_socket.accept()
             print("Connection from", address, ". Creating new thread")
             stream = self.context.wrap_socket(clientsocket, server_side=True)
-            thread.Thread(target=self.handle_client, args=(stream, address)).start()
+            thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
+            self.add_guest(stream, stream.getpeername())
     
-    def handle_client(self, stream, address):
+    def handle_client_room(self, stream, address):
         while True:
             received = stream.recv(1024).decode()
             if received != "":

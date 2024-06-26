@@ -2,10 +2,10 @@ import rsa
 from shared.certificate import get_or_generate_cert
 
 class RSAHandler:
-    def __init__(self, cert_file, key_file, cert_expiration_days):
-        self.cert_file, self.key_file = get_or_generate_cert(cert_file, key_file, cert_expiration_days)
-        self.private_key = self.get_private_key(self.key_file)
-        self.public_key = self.get_public_key(self.cert_file)
+    def __init__(self, cert_file, key_file, cert_expiration_days, pub_key_file):
+        get_or_generate_cert(cert_file, key_file, cert_expiration_days, pub_key_file)
+        self.private_key = self.get_private_key(key_file)
+        self.public_key = self.get_public_key(pub_key_file)
     
     def get_private_key(self, key_type):
         with open(key_type, mode='rb') as file:

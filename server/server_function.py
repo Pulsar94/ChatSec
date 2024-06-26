@@ -1,5 +1,6 @@
 import server.rooms as rooms
 import shared.json_handler as jh
+import threading as thread
 
 class func:
     def __init__(self, server):
@@ -10,17 +11,18 @@ class func:
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_disconnect": self.handle_room_disconnect,
+            "debug": self.debug,
         }
 
     def create_room(self, data, socket):
         self.port += 1
         room = rooms.Room(data["data"]["room"], self.port, data["data"]["password"])
         if self.rooms.add_room(room):
-            room.add_guest(socket, socket.getpeername())
-            client_data = jh.json_encode('room_created', room.name)
+            thread.Thread(target=room.listen).start()
+            client_data = jh.json_encode('room_created', {"name":room.name, "port":self.port})
         else:
             client_data = jh.json_encode('room_already_created', room.name)
-        socket.send(client_data.encode())
+        self.server.send(socket, client_data)
 
     def connect_room(self, data, socket):
         print("Connecting to room")
@@ -48,3 +50,8 @@ class func:
         else:
             client_data = jh.json_encode("room_not_found", "")
             socket.send(client_data.encode())
+    
+    def debug(self, data, socket):
+        print("Debug: ", data["data"])
+        client_data = jh.json_encode("debug", "hello")
+        self.server.send(socket, client_data)
