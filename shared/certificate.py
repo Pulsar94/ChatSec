@@ -32,6 +32,9 @@ def get_or_generate_cert(cert_file, key_file, cert_expiration_days):
             .add_extension(x509.SubjectAlternativeName([x509.DNSName(u"localhost")]), critical=False)
             .sign(key, hashes.SHA256(), default_backend())
         )
+
+        os.makedirs(os.path.dirname(cert_file), exist_ok=True)
+        os.makedirs(os.path.dirname(key_file), exist_ok=True)
         
         with open(cert_file, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))

@@ -14,7 +14,7 @@ CERT_EXPIRATION_DAYS = 1
 class Server:
     def __init__(self):
         self.rooms = rooms.Rooms()
-        cert, key = get_or_generate_cert(CERT_FILE_SERVER, KEY_FILE_SERVER, CERT_EXPIRATION_DAYS)
+        self.rsa = rsa(CERT_FILE_SERVER, KEY_FILE_SERVER, CERT_EXPIRATION_DAYS)
         
         self.func = func(self)
         

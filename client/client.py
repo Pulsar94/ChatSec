@@ -18,11 +18,12 @@ CERT_EXPIRATION_DAYS = 1
 class Client:
     def __init__(self):
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        self.rsa = rsa(self.cert_file, self.key_file, CERT_EXPIRATION_DAYS)
+        self.rsa = rsa(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS)
+        self.server_key = None
         
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.func_server = func_server()
-        self.func_room = func_room()
+        self.func_server = func_server(self)
+        self.func_room = func_room(self)
     
     def sv_connect(self, host, port):
         try:
@@ -54,7 +55,7 @@ class Client:
                 data = jh.json_decode(decrypted)
                 print("Server says: ", data)
 
-                for tag, callback in self.func.tag.items():
+                for tag, callback in self.func_server.tag.items():
                     if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
                         print("Executed callback for tag", tag)
                         break
@@ -66,7 +67,7 @@ class Client:
                 data = jh.json_decode(received)
                 print("Server says: ", data)
 
-                for tag, callback in self.func.tag.items():
+                for tag, callback in self.func_room.tag.items():
                     if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
                         print("Executed callback for tag", tag)
                         break
@@ -75,14 +76,18 @@ class Client:
         hashed_password = ""
         if password != "":
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        self.send(jh.json_encode("create_room", {"room": room, "password": hashed_password}))
+        self.sv_send(jh.json_encode("create_room", {"room": room, "password": hashed_password}))
     
     def sv_connect_room(self, room, password):
         hashed_password = ""
         if password != "":
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        self.send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}))
+        self.sv_send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}))
     
+    def sv_send(self, message):
+        encrypted_message = self.rsa.encrypt(message, self.server_key)
+        self.ssl_room_socket.send(encrypted_message)
+
     def rm_send(self, message):
         self.ssl_room_socket.send(message.encode())
     
@@ -107,15 +112,15 @@ class Client:
 def main():
     client = Client()
     client.sv_connect(socket.gethostname(), 5000)
-    thread.Thread(target=client.listen).start()
+    #thread.Thread(target=client.listen).start()
 
-    print("Client is ready to send to server")
+    #print("Client is ready to send to server")
 
     #client.create_room("room1", "1234")
 
-    client.connect_room("room1", "1234")
+    #client.connect_room("room1", "1234")
 
-    client.send(jh.json_encode("room_message", {"room": "room1", "username": "yes", "message": "Hello, world!"}))
+    #client.send(jh.json_encode("room_message", {"room": "room1", "username": "yes", "message": "Hello, world!"}))
 
     #client.send_file("test.pdf", "room1")
 
