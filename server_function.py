@@ -1,8 +1,10 @@
+import json
 import rooms
 import json_handler as jh
 
 class func:
     def __init__(self):
+        self.rooms_list = []
         self.rooms = rooms.Rooms()
         self.tag = {
             "create_room": self.create_room,
@@ -25,8 +27,11 @@ class func:
         rooms = self.rooms.get_rooms()
         if rooms:
             for r in rooms:
-                print(r.name)
-                client_data = jh.json_encode("rooms", r.name)
+                self.rooms_list.append(r.name)
+            self.rooms_list = list(set(self.rooms_list))
+            print("Rooms list: ", self.rooms_list)
+            json_rooms = json.dumps(self.rooms_list)
+            client_data = jh.json_encode("list_rooms", json_rooms)
         else:
             client_data = jh.json_encode("no_rooms", "")
         socket.send(client_data.encode())

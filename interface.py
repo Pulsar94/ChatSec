@@ -62,6 +62,7 @@ class RoomPage(ttk.Frame):
         self.chat_histories = {}
         self.client = None
         self.room_list = None
+        self.verif= True
         self.create_widgets()
 
     def create_widgets(self):
@@ -79,7 +80,8 @@ class RoomPage(ttk.Frame):
 
     def actualise(self):
         self.client.send(jh.json_encode("get_rooms", {}))
-        print(self.client.send(jh.json_encode("get_rooms", {})))
+        for r in func().rooms_list:
+            self.room_list.insert(tk.END, r)
 
     def createwindow(self):
         self.popup = tk.Toplevel(self)
@@ -127,11 +129,36 @@ class RoomPage(ttk.Frame):
         if selected_indices:
             selected_index = selected_indices[0]
             self.selected_room = self.room_list.get(selected_index)
-            self.controller.show_frame("ChatPage")
-            self.controller.frames["ChatPage"].current_room = self.selected_room
-            self.controller.frames["ChatPage"].update_chat_history()
-            self.controller.frames["ChatPage"].initialize_client()
-            self.client.send(jh.json_encode("join_room", {"room": self.selected_room}))
+            self.room_verification(self.selected_room)
+
+
+    def room_verification(self, room):
+        self.room_verif = tk.Toplevel(self)
+        self.room_verif.title("Create Room")
+        self.room_verif.geometry("300x200")  # Width x Height
+
+        label = ttk.Label(self.room_verif, text="Enter room password:")
+        label.pack(pady=10, padx=10)
+
+        self.room_password_entry = ttk.Entry(self.room_verif)
+        self.room_password_entry.insert(0, "Password")
+        self.room_password_entry.pack(pady=5, padx=10)
+
+        self.room_verif_button = ttk.Button(self.room_verif, text="Join Room", command=lambda :self.room_verification_check(room,self.room_password_entry.get()))
+        self.room_verif_button.pack(pady=5, padx=10)
+
+        self.room_verif.grab_set()
+        self.room_verif.focus_set()
+        self.room_verif.wait_window()
+
+    def room_verification_check(self,room,password):
+        self.client.send(jh.json_encode("join_room", {"room": room})) # "password": password
+        self.controller.show_frame("ChatPage")
+        self.controller.frames["ChatPage"].current_room = self.selected_room
+        self.controller.frames["ChatPage"].update_chat_history()
+        self.controller.frames["ChatPage"].initialize_client()
+        self.client.send(jh.json_encode("join_room", {"room": self.selected_room}))
+        self.room_verif.destroy()
 
     def update_room_history(self):
         self.controller.frames["ChatPage"].update_chat_history()
