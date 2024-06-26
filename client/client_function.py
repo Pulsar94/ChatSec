@@ -5,9 +5,8 @@ class func_server:
     def __init__(self, client):
         self.client = client
         self.tag = {
-            "room_created": self.room_created,
             "room_already_connected": self.room_already_connected,
-            "room_connected": self.room_connected,
+            "connect_room": self.connect_room,
             "room_found": self.room_found,
             "room_already_created": self.room_already_created,
             "room_wrong_password": self.room_wrong_password,
@@ -15,19 +14,14 @@ class func_server:
         }
         self.files = {}
 
-    def room_created(self, data, socket):
-        host = socket.getpeername()[0]
-        print("Room created on host", host)
-        port = data["data"]["port"]
-        name = data["data"]["name"]
-        print("Room created on port", port)
-        self.client.rm_connect(host, port, name)
-
     def room_already_connected(self, data, socket):
         print("Room already connected")
 
-    def room_connected(self, data, socket):
-        print("Room connected")
+    def connect_room(self, data, socket):
+        host = socket.getpeername()[0]
+        port = data["data"]["port"]
+        name = data["data"]["name"]
+        self.client.rm_connect(host, port, name)
     
     def room_wrong_password(self, data, socket):
         print("Wrong password")
@@ -36,10 +30,7 @@ class func_server:
         print("Room found")
         
     def room_already_created(self, data, socket):
-        print("Room already created")
-        room = data["data"]
-        client_data = jh.json_encode("connect_room", {"name": room})
-        socket.send(client_data.encode())
+        print("Room already exists")
     
     def debug(self, data, socket):
         print("Debug: ", data["data"])

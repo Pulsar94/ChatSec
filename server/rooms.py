@@ -37,7 +37,7 @@ class Room:
         self.guests = []
         self.files = {}
 
-        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         cert, key = "key/"+name+"-cert.pem", "key/"+name+"-server.pem"
         get_or_generate_cert(cert, key, CERT_EXPIRATION_DAYS)
         self.context.load_cert_chain(certfile=cert, keyfile=key)

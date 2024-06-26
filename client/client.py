@@ -34,15 +34,17 @@ class Client:
             print("Connection failed")
 
     def rm_connect(self, host, port, name):
-        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        self.room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         self.context.load_verify_locations("key/"+name+"-cert.pem")
         self.context.check_hostname = False
         self.context.verify_mode = ssl.CERT_REQUIRED
         
-        self.ssl_room_socket = self.context.wrap_socket(self.server_socket, server_hostname=host)
+        self.ssl_room_socket = self.context.wrap_socket(self.room_socket, server_hostname=host)
         try:
             self.ssl_room_socket.connect((host, port))
             print("Connected to room {} on port {}".format(name, port))
+            thread.Thread(target=self.rm_listen).start()
         except:
             print("Connection to room failed")
     
