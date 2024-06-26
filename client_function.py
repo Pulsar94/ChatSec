@@ -1,9 +1,10 @@
 import json_handler as jh
 
+
+rooms_list = []
 class func:
     def __init__(self):
         self.rooms = None
-        self.rooms_list = []
         self.tag = {
             "room_created": self.room_created,
             "room_already_connected": self.room_already_connected,
@@ -11,7 +12,7 @@ class func:
             "room_found": self.room_found,
             "room_message": self.room_message,
             "room_already_created": self.room_already_created,
-            "list_rooms": self.rooms_list,
+            "list_rooms": self.list_rooms,
         }
 
     def room_created(self, data, socket):
@@ -31,7 +32,7 @@ class func:
 
     def list_rooms(self, data, socket):
         print("Rooms list: ", data["data"])
-        self.rooms_list = data["data"]
+        rooms_list = data["data"]
     
     def room_already_created(self, data, socket):
         print("Room already created")

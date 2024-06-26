@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import ttk
 import threading as thread
@@ -54,6 +55,7 @@ class LoginPage(ttk.Frame):
         self.controller.username = self.username.get()
         self.controller.show_frame("RoomPage")
         self.controller.frames["RoomPage"].initialize_client()
+        self.controller.frames["RoomPage"].actualise()
 
 class RoomPage(ttk.Frame):
     def __init__(self, parent, controller):
@@ -80,8 +82,11 @@ class RoomPage(ttk.Frame):
 
     def actualise(self):
         self.client.send(jh.json_encode("get_rooms", {}))
-        for r in func().rooms_list:
-            self.room_list.insert(tk.END, r)
+        time.sleep(0.01) # wait for the server to respond
+        for r in (self.client.rooms):
+            if r not in self.room_list.get(0, tk.END):
+                self.room_list.insert(tk.END, r)
+
 
     def createwindow(self):
         self.popup = tk.Toplevel(self)
@@ -218,6 +223,7 @@ class ChatPage(ttk.Frame):
 
 class Client:
     def __init__(self, chat_page):
+        self.rooms = []
         self.chat_page = chat_page
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         cert_file, key_file = get_or_generate_cert(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS)
@@ -227,6 +233,7 @@ class Client:
         self.clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func = func()
         self.func.tag["room_message"] = self.room_message_received
+        self.func.tag["list_rooms"] = self.list_rooms
 
     def connect(self, host, port):
         self.ssl_clientsocket = self.context.wrap_socket(self.clientsocket, server_hostname=host)
@@ -263,6 +270,9 @@ class Client:
         self.chat_page.chat_histories[room].append(full_message)
         if room == self.chat_page.selected_room:
             self.chat_page.update_room_history()
+
+    def list_rooms(self, data, socket):
+        self.rooms = jh.json_decode(data["data"])
 
 if __name__ == "__main__":
     app = ChatApp()
