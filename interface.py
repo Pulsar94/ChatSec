@@ -8,6 +8,7 @@ import ssl
 import json_handler as jh
 from client_function import func
 from certificate import get_or_generate_cert
+import hashlib
 
 CERT_FILE_SERVER = "key/server-cert.pem"
 CERT_FILE_CLIENT = "key/client-cert.pem"
@@ -180,6 +181,18 @@ class Client:
                 seg_count += 1
             print("Sending file segment: end")
             self.ssl_clientsocket.send(jh.json_encode("room_file_seg_end", {"room": room, "file_name": file_name}).encode())
+    
+    def create_room(self, room, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.ssl_clientsocket.send(jh.json_encode("create_room", {"room": room, "password": hashed_password}).encode())
+    
+    def connect_room(self, room, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.ssl_clientsocket.send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}).encode())
     
     def room_message_received(self, data, socket):
         room = data["data"]["room"]
