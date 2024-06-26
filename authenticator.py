@@ -15,7 +15,7 @@ class Authenticator:
                 users_authentification[email] = user_info['password']
         return users_authentification
 
-    def add_user(self, email, password):
-        self.users_authentification[email] = password
-        with open('DB_authentication.json', 'w') as file:
-            json.dump({'users': self.users_authentification}, file)
+    def extract_all_user_info(self):
+        with open('DB_authentication.json', 'r') as file:
+            data = json.load(file)
+            return data['users']

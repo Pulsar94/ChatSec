@@ -80,6 +80,10 @@ def main():
 
     client.send(jh.json_encode("authentification", {"username": "tibo@secu.hack", "password": f"{client.hashed_password('1234')}"}))
 
+    client.send(jh.json_encode("add_user", {"username": "tao@secu.hack", "password": f"{client.hashed_password('1234')}", "name": "tao"}))
+
+    #client.send(jh.json_encode("add_user",{"username": "tibo@secu.hack", "password": f"{client.hashed_password('1234')}", "name": "tibo"}))
+
     client.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
     
     client.send(jh.json_encode("connect_room", {"name": "room1"}))

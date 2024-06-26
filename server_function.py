@@ -2,13 +2,17 @@ import rooms
 import json_handler as jh
 import authenticator
 import hashlib
+import time
+import json
 
 class func:
     def __init__(self):
         self.rooms = rooms.Rooms()
         self.users_authentification = authenticator.Authenticator().users_authentification
+        self.users_info = authenticator.Authenticator().extract_all_user_info()
         self.tag = {
             "authentification": self.authentification,
+            "add_user": self.add_user,
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_message": self.handle_room_message,
@@ -101,15 +105,78 @@ class func:
             socket.send(client_data.encode())
 
     def authentification(self, data, socket):
-        # here we'll integrate the authentication process
-        # will contain json query to check serverside database for client authentification
+        """
+        This function is used to authenticate a user
+        :param data:
+        :param socket:
+        :return:
+        """
+        # Check if the user exists
         if data["data"]["username"] in self.users_authentification:
+            # Check if the password is correct
             if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
+                # Send a message to the client that the authentication was successful
                 client_data = jh.json_encode("authenticated", "")
                 socket.send(client_data.encode())
+                # Log the connection
+                try:
+                    with open('./Logs/connection.log', 'a') as file:
+                        file.write(f"{time.asctime()} - {data['data']['username']} connected from IP {socket.getpeername()[0]}\n")
+
+                except IOError as e:
+                    print(e)
             else:
+                # Send a message to the client that the authentication failed
                 client_data = jh.json_encode("authentication_failed", "")
                 socket.send(client_data.encode())
+                # Log the failed connection
+                try:
+                    with open('./Logs/connection.log', 'a') as file:
+                        file.write(f"{time.asctime()} - {data['data']['username']} failed to connect from IP {socket.getpeername()[0]}\n")
+                except IOError as e:
+                    print(e)
         else:
+            # Send a message to the client that the authentication failed
             client_data = jh.json_encode("authentication_failed", "")
+            socket.send(client_data.encode())
+            # Log the failed connection
+            try:
+                with open('./Logs/connection.log', 'a') as file:
+                    file.write(f"{time.asctime()} - {data['data']['username']} user doesn't exist. Attempted connection from IP {socket.getpeername()[0]}\n")
+            except IOError as e:
+                print(e)
+
+    def add_user(self, data, socket):
+        """
+        This function is used to add a user to the database
+        :param data:
+        :param socket:
+        :return: none
+        """
+        # Check if the user already exists
+        if data["data"]["username"] not in self.users_authentification:
+            # Add the user to the database
+            self.users_info[data["data"]["username"]] = {"password": data["data"]["password"]}
+            self.users_info[data["data"]["username"]]["name"] = data["data"]["name"]
+            # Save the new user to the database
+            try:
+                with open('DB_authentication.json', 'w') as file:
+                    json.dump({'users': self.users_info}, file, sort_keys=True, indent=3, separators=(',', ': '))
+            except IOError as e:
+                print(e)
+            # Update the users_authentification and user_info dictionary
+            self.users_authentification = authenticator.Authenticator().users_authentification
+            self.users_info = authenticator.Authenticator().extract_all_user_info()
+            # Send a message to the client that the user was added
+            client_data = jh.json_encode("user_added", "")
+            socket.send(client_data.encode())
+            # Log the addition of the user
+            try:
+                with open('./Logs/DB_actions.log', 'a') as file:
+                    file.write(f"{time.asctime()} - {data['data']['username']} added to DB\n")
+            except IOError as e:
+                print(e)
+        else:
+            # Send a message to the client that the user already exists
+            client_data = jh.json_encode("user_already_exists", "")
             socket.send(client_data.encode())
