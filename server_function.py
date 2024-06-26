@@ -112,27 +112,37 @@ class func:
             print(f"Dropping file {file_name} due to timeout")
             del self.pending_files[file_name]
 
-def authentification(self, data, socket):
-        """
-        This function is used to authenticate a user
-        :param data:
-        :param socket:
-        :return:
-        """
-        # Check if the user exists
-        if data["data"]["username"] in self.users_authentification:
-            # Check if the password is correct
-            if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
-                # Send a message to the client that the authentication was successful
-                client_data = jh.json_encode("authenticated", "")
-                socket.send(client_data.encode())
-                # Log the connection
-                try:
-                    with open('./Logs/connection.log', 'a') as file:
-                        file.write(f"{time.asctime()} - {data['data']['username']} connected from IP {socket.getpeername()[0]}\n")
+    def authentification(self, data, socket):
+            """
+            This function is used to authenticate a user
+            :param data:
+            :param socket:
+            :return:
+            """
+            # Check if the user exists
+            if data["data"]["username"] in self.users_authentification:
+                # Check if the password is correct
+                if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
+                    # Send a message to the client that the authentication was successful
+                    client_data = jh.json_encode("authenticated", "")
+                    socket.send(client_data.encode())
+                    # Log the connection
+                    try:
+                        with open('./Logs/connection.log', 'a') as file:
+                            file.write(f"{time.asctime()} - {data['data']['username']} connected from IP {socket.getpeername()[0]}\n")
 
-                except IOError as e:
-                    print(e)
+                    except IOError as e:
+                        print(e)
+                else:
+                    # Send a message to the client that the authentication failed
+                    client_data = jh.json_encode("authentication_failed", "")
+                    socket.send(client_data.encode())
+                    # Log the failed connection
+                    try:
+                        with open('./Logs/connection.log', 'a') as file:
+                            file.write(f"{time.asctime()} - {data['data']['username']} failed to connect from IP {socket.getpeername()[0]}\n")
+                    except IOError as e:
+                        print(e)
             else:
                 # Send a message to the client that the authentication failed
                 client_data = jh.json_encode("authentication_failed", "")
@@ -140,19 +150,9 @@ def authentification(self, data, socket):
                 # Log the failed connection
                 try:
                     with open('./Logs/connection.log', 'a') as file:
-                        file.write(f"{time.asctime()} - {data['data']['username']} failed to connect from IP {socket.getpeername()[0]}\n")
+                        file.write(f"{time.asctime()} - {data['data']['username']} user doesn't exist. Attempted connection from IP {socket.getpeername()[0]}\n")
                 except IOError as e:
                     print(e)
-        else:
-            # Send a message to the client that the authentication failed
-            client_data = jh.json_encode("authentication_failed", "")
-            socket.send(client_data.encode())
-            # Log the failed connection
-            try:
-                with open('./Logs/connection.log', 'a') as file:
-                    file.write(f"{time.asctime()} - {data['data']['username']} user doesn't exist. Attempted connection from IP {socket.getpeername()[0]}\n")
-            except IOError as e:
-                print(e)
 
     def add_user(self, data, socket):
         """
