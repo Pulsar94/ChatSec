@@ -34,18 +34,19 @@ class Room:
     def __init__(self, name, port, password=None):
         self.name = name
         self.password = password
+        self.port = port
         self.guests = []
         self.files = {}
 
         self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        cert, key = "key/"+name+"-cert.pem", "key/"+name+"-server.pem"
+        cert, key = "key-server/"+name+"-cert.pem", "key-server/"+name+"-server.pem"
         get_or_generate_cert(cert, key, CERT_EXPIRATION_DAYS)
         self.context.load_cert_chain(certfile=cert, keyfile=key)
         
         self.func = func(self)
         
         self.room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.room_socket.bind((socket.gethostname(), port))
+        self.room_socket.bind((socket.gethostname(), self.port))
         self.room_socket.listen(5)
         print("Room: "+name+" is ready to receive a connection")
 

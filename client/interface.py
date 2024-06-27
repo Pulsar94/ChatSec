@@ -10,9 +10,9 @@ from client.client_function import func
 from shared.certificate import get_or_generate_cert
 import hashlib
 
-CERT_FILE_SERVER = "key/server-cert.pem"
-CERT_FILE_CLIENT = "key/client-cert.pem"
-KEY_FILE_CLIENT = "key/client-key.pem"
+CERT_FILE_SERVER = "key-server/server-cert.pem"
+CERT_FILE_CLIENT = "key-server/client-cert.pem"
+KEY_FILE_CLIENT = "key-server/client-key.pem"
 CERT_EXPIRATION_DAYS = 1
 
 class ChatApp(tk.Tk):

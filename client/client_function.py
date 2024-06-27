@@ -1,9 +1,12 @@
 import shared.json_handler as jh
 import base64
+from os import makedirs
+import base64
 
 class func_server:
     def __init__(self, client):
         self.client = client
+        self.pem_file, self.filename = [], ""
         self.tag = {
             "room_already_connected": self.room_already_connected,
             "connect_room": self.connect_room,
@@ -11,6 +14,12 @@ class func_server:
             "room_already_created": self.room_already_created,
             "room_wrong_password": self.room_wrong_password,
             "debug": self.debug,
+        }
+        self.tag_unencrypted = {
+            "need_pem": self.need_pem,
+            "get_pem_start": self.get_pem_start,
+            "get_pem": self.get_pem,
+            "get_pem_end": self.get_pem_end,
         }
         self.files = {}
 
@@ -31,6 +40,26 @@ class func_server:
         
     def room_already_created(self, data, socket):
         print("Room already exists")
+    
+    def need_pem(self, data, socket):
+        filename = "client-pub-key"
+        self.client.sv_send_pem(filename)
+    
+    def get_pem_start(self, data, socket):
+        self.filename = data["data"]["file_name"]
+        self.pem_file = []
+
+    def get_pem(self, data, socket):
+        self.pem_file.append(data["data"]["file"])
+
+    def get_pem_end(self, data, socket):
+        makedirs("key-client", exist_ok=True)
+        with open("key-client/"+self.filename+".pem", 'wb') as file:
+            for seg in self.pem_file:
+                file.write(base64.b64decode(seg))
+        self.filename = ""
+        self.pem_file = []
+        self.client.sv_send_pem()
     
     def debug(self, data, socket):
         print("Debug: ", data["data"])

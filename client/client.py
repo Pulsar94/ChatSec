@@ -6,21 +6,19 @@ from client.client_function import func_room, func_server
 import base64
 import os
 import hashlib
+from time import sleep
 from shared.rsa_handler import RSAHandler as rsa
 
-CERT_FILE_SERVER = "key/server-cert.pem"
-PUB_KEY_FILE_SERVER = "key/server-pub-key.pem"
-
-CERT_FILE_CLIENT = "key/client-cert.pem"
-KEY_FILE_CLIENT = "key/client-key.pem"
-PUB_KEY_FILE_CLIENT = "key/client-pub-key.pem"
+CERT_FILE_CLIENT = "key-client/client-cert.pem"
+KEY_FILE_CLIENT = "key-client/client-key.pem"
+PUB_KEY_FILE_CLIENT = "key-client/client-pub-key.pem"
 
 CERT_EXPIRATION_DAYS = 1
 
 class Client:
     def __init__(self):
         self.rsa = rsa(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS, PUB_KEY_FILE_CLIENT)
-        self.server_key = self.rsa.get_public_key(PUB_KEY_FILE_SERVER)
+        self.server_key = None
         
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func_server = func_server(self)
@@ -30,13 +28,14 @@ class Client:
         try:
             self.server_socket.connect((host, port))
             print("Connected to server {} on port {}".format(host, port))
+            self.server_socket.send(jh.json_encode("need_pem",{}).encode())
         except:
             print("Connection failed")
 
     def rm_connect(self, host, port, name):
         self.room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        self.context.load_verify_locations("key/"+name+"-cert.pem")
+        self.context.load_verify_locations("key-client/"+name+"-cert.pem")
         self.context.check_hostname = False
         self.context.verify_mode = ssl.CERT_REQUIRED
         
@@ -52,14 +51,30 @@ class Client:
         while True:
             received = self.server_socket.recv(1024)
             if received != "":
-                decrypted = self.rsa.decrypt(received)
-                data = jh.json_decode(decrypted)
-                print("Server says: ", data)
+                if self.rsa.is_encrypted(received):
+                    try:
+                        decrypted = self.rsa.decrypt(received)
+                        data = jh.json_decode(decrypted)
+                        print("Server says: ", data)
 
-                for tag, callback in self.func_server.tag.items():
-                    if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
-                        print("Executed callback for tag", tag)
-                        break
+                        for tag, callback in self.func_server.tag.items():
+                            if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
+                                print("Executed callback for tag", tag)
+                                break
+                    except:
+                        print("A message has been received but an error occurred while decrypting it. Ignoring message...")
+                else:
+                    try:
+                        data = jh.json_decode(received.decode())
+                        print("Server says: ", data)
+
+                        for tag, callback in self.func_server.tag_unencrypted.items():
+                            if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
+                                print("Executed callback for tag", tag)
+                                break
+                    except:
+                        print("A unencrypted message has been received but an error occurred. Ignoring message...")
+            
     
     def rm_listen(self):
         while True:
@@ -86,14 +101,37 @@ class Client:
         self.sv_send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}))
     
     def sv_send(self, message):
-        encrypted_message = self.rsa.encrypt(message.encode(), self.server_key)
-        self.server_socket.send(encrypted_message)
+        try:
+            self.server_key = self.rsa.get_public_key("key-client/server-pub-key.pem")
+            encrypted_message = self.rsa.encrypt(message.encode(), self.server_key)
+            self.server_socket.send(encrypted_message)
+        except FileNotFoundError:
+            print("RSA key not found.")
+    
+    def sv_send_pem(self):
+        path = "key-client/client-pub-key.pem"
+
+        self.server_socket.send(jh.json_encode("get_pem_start", {}).encode())
+        with open(path, 'rb') as file:
+            seg_count = 0
+            seg = file.read(512)
+            while seg:
+                sleep(0.1)
+                encoded_seg = base64.b64encode(seg).decode('utf-8')
+                self.server_socket.send(jh.json_encode("get_pem", {"seg": seg_count, "file": encoded_seg}).encode())
+                seg = file.read(512)
+                seg_count += 1
+            sleep(0.1)
+            self.server_socket.send(jh.json_encode("get_pem_end", {}).encode())
 
     def rm_send(self, message):
         self.ssl_room_socket.send(message.encode())
     
     def rm_send_message(self, message, username):
-        self.ssl_room_socket.send(jh.json_encode("room_message", {"username": username, "message":message}).encode())
+        try:
+            self.ssl_room_socket.send(jh.json_encode("room_message", {"username": username, "message":message}).encode())
+        except:
+            print("Error sending message, no room connected.")
     
     def rm_send_file(self, file_path):
         file_name = os.path.basename(file_path)
@@ -102,11 +140,13 @@ class Client:
             seg_count = 0
             seg = file.read(512)
             while seg:
+                sleep(0.1)
                 print("Sending file segment: ", seg_count)
                 encoded_seg = base64.b64encode(seg).decode('utf-8')
                 self.ssl_room_socket.send(jh.json_encode("room_file_seg", {"seg": seg_count, "file_name": "ret_"+file_name, "file": encoded_seg}).encode())
                 seg = file.read(512)
                 seg_count += 1
+            sleep(0.1)
             print("Sending file segment: end")
             self.ssl_room_socket.send(jh.json_encode("room_file_seg_end", {"file_name": "ret_"+file_name}).encode())
                   
