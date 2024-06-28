@@ -87,7 +87,19 @@ class Client:
                     if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
                         print("Executed callback for tag", tag)
                         break
-    
+
+    def sv_authentification(self, username, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.sv_send(jh.json_encode("authentification", {"username": username, "password": hashed_password}))
+
+    def sv_add_user(self, username, password, name):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.sv_send(jh.json_encode("add_user", {"username": username, "password": hashed_password, "name": name}))
+
     def sv_create_room(self, room, password):
         hashed_password = ""
         if password != "":
