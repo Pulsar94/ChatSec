@@ -33,6 +33,7 @@ class Rooms:
             sleep(10)
             for r in self.rooms:
                 if r.guest_try():
+                    print(f"{r.name} has no guests. Deleting room...")
                     self.del_room(r)
 
     def has_guests(self):
@@ -66,25 +67,36 @@ class Room:
 
     def listen(self):
         while True:
-            print("Waiting for connection")
-            (clientsocket, address) = self.room_socket.accept()
-            print("Connection from", address, ". Creating new thread")
-            stream = self.context.wrap_socket(clientsocket, server_side=True)
-            thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
-            self.add_guest(stream, stream.getpeername())
+
+            try:
+                print("Waiting for connection")
+                (clientsocket, address) = self.room_socket.accept()
+                print("Connection from", address, ". Creating new thread")
+                stream = self.context.wrap_socket(clientsocket, server_side=True)
+                thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
+                self.add_guest(stream, stream.getpeername())
+            except:
+                print("Connection failed. Closing socket.")
+                self.room_socket.close()
+                break
     
     def handle_client_room(self, stream, address):
         while True:
-            received = stream.recv(1024).decode()
-            if received != "":
-                self.reset_guest_try(address)
-                data = jh.json_decode(received)
-                print("Client says: ", data)
+            try:
+                received = stream.recv(1024).decode()
+                if received != "":
+                    self.reset_guest_try(address)
+                    data = jh.json_decode(received)
+                    print("Client says: ", data)
 
-                for tag, callback in self.func.tag.items():
-                    if jh.compare_tag_from_socket(data, tag, callback, stream):
-                        print("Executed callback for tag", tag)
-                        break
+                    for tag, callback in self.func.tag.items():
+                        if jh.compare_tag_from_socket(data, tag, callback, stream):
+                            print("Executed callback for tag", tag)
+                            break
+            except:
+                print("Client disconnected")
+                self.remove_guest(address)
+                break
     
     def reset_guest_try(self, addr):
         for key, data in self.guests.items():
@@ -92,16 +104,24 @@ class Room:
                 data["try"] = 3
 
     def guest_try(self):
+        tbr = []
         for key, s_data in self.guests.items():
             s_data["try"] -= 1
             if s_data["try"] == 0:
                 self.remove_guest(key)
                 print("Guest kicked")
             else:
-                data = jh.json_encode("guest_try", {})
-                s_data["socket"].send(data.encode())
+                try:
+                    data = jh.json_encode("guest_try", {})
+                    s_data["socket"].send(data.encode())
+                except:
+                    print("Guest no longer connected")
+                    tbr.append(key)
         
-        return self.guests == 0
+        for key in tbr:
+            self.remove_guest(key)
+        
+        return len(self.guests) == 0
 
     def add_guest(self, guest, addr):
         for key, data in self.guests.items():
@@ -112,10 +132,9 @@ class Room:
         return True
 
     def remove_guest(self, addr):
-        for key, data in self.guests.items():
-            if key == addr:
-                data["socket"].close()
-                self.guests.pop(key)
+        if addr in self.guests:
+            self.guests[addr]["socket"].close()
+            self.guests.pop(addr)
         return self.guests == 0
 
     def get_guests(self):
