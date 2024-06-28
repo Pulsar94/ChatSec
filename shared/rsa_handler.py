@@ -1,6 +1,5 @@
 import rsa
-from json import JSONDecodeError, loads
-from re import findall
+from json import loads
 from shared.certificate import get_or_generate_cert
 
 class RSAHandler:

@@ -24,6 +24,7 @@ class Server:
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind((socket.gethostname(), 5000))
         self.serversocket.listen(5)
+        thread.Thread(target=self.rooms.room_guests_checker).start()
         print("Server is ready to receive a connection")
 
     def listen(self):

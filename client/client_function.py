@@ -74,6 +74,7 @@ class func_room:
             "room_file": self.room_file,
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
+            "guest_try": self.guest_try,
         }
         self.files = {}
 
@@ -95,6 +96,11 @@ class func_room:
         with open(data["data"]["file_name"], 'wb') as file:
             for seg in self.files[data["data"]["file_name"]]:
                 file.write(base64.b64decode(seg))
+    
+    def guest_try(self, data, socket):
+        print("Guest try received")
+        client_data = jh.json_encode("guest_try", {})
+        self.client.rm_send(client_data)
     
     
    
