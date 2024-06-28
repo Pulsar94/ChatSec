@@ -3,13 +3,10 @@ from GUI.chat_room import ChatPage
 from GUI.room_connection import RoomPage
 import shared.json_handler as jh
 from client.client import Client 
-
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-
 import base64
 import os
-
 import ssl
 
 
