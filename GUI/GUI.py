@@ -1,13 +1,17 @@
-from client.client import Client
 from GUI.login import LoginPage
+from GUI.chat_room import ChatPage
+from GUI.room_connection import RoomPage
+import shared.json_handler as jh
+from client.client import Client 
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import threading
+
 import base64
 import os
-import socket
+
 import ssl
-import json_handler as jh
+
 
 class ChatApp(tk.Tk):
     def __init__(self):
@@ -24,7 +28,14 @@ class ChatApp(tk.Tk):
             self.frames[page_name] = frame
             frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame("LoginPage")
+        self.show_frame("LoginPage")
+        
 
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
+        
+
+if __name__ == "__main__":
+    app = ChatApp()
+    app.mainloop()

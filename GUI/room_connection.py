@@ -1,5 +1,9 @@
 from tkinter import ttk,messagebox
+import tkinter as tk
+import threading
+import socket
 from client.client import Client
+import shared.json_handler as jh
 
 class RoomPage(ttk.Frame):
     def __init__(self, parent, controller):
@@ -62,7 +66,7 @@ class RoomPage(ttk.Frame):
 
        
     def create_room(self,room_name,room_password):
-        self.controller.frames["RoomPage"].client.send(jh.json_encode("create_room", {"name": room_name, "password": room_password}))
+        self.controller.frames["RoomPage"].client.rm_send_message(jh.json_encode("create_room", {"name": room_name, "password": room_password}))
         self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
         self.controller.frames["RoomPage"].chat_histories[room_name] = []
         self.popup.destroy()
@@ -70,8 +74,8 @@ class RoomPage(ttk.Frame):
 
     def initialize_client(self):
         self.client = Client(self)
-        self.client.connect(socket.gethostname(), 5000)
-        threading.Thread(target=self.client.listen).start()
+        self.client.sv_connect(socket.gethostname(), 5000)
+        threading.Thread(target=self.client.sv_listen).start()
 
     def join_room(self):
         selected_indices = self.room_list.curselection()
@@ -101,12 +105,12 @@ class RoomPage(ttk.Frame):
         self.room_verif.wait_window()
 
     def room_verification_check(self,room,password):
-        self.client.send(jh.json_encode("join_room", {"room": room})) # "password": password
+        self.client.rm_connect(jh.json_encode("join_room", {"room": room})) # "password": password
         self.controller.show_frame("ChatPage")
         self.controller.frames["ChatPage"].current_room = self.selected_room
         self.controller.frames["ChatPage"].update_chat_history()
         self.controller.frames["ChatPage"].initialize_client()
-        self.client.send(jh.json_encode("join_room", {"room": self.selected_room}))
+        self.client.rm_connect(jh.json_encode("join_room", {"room": self.selected_room}))
         self.room_verif.destroy()
 
     def update_room_history(self):
