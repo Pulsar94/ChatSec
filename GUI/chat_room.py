@@ -1,5 +1,12 @@
+import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
+import threading
+import socket
+import shared.json_handler as jh
 
+
+from client.client import Client
 class ChatPage(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -52,18 +59,20 @@ class ChatPage(ttk.Frame):
 
     def send_message(self):
         message = self.message_entry.get()
-        if message and self.current_room:
+        if message and self.current_room and self.client:
             username = self.controller.username
-            self.client.send(jh.json_encode("room_message", {"room": self.current_room, "username": username, "message": message}))
+            self.client.rm_send(jh.json_encode("room_message", {"room": self.current_room, "username": username, "message": message}))
             self.message_entry.delete(0, tk.END)
+
+
 
     def select_and_send_file(self):
         file_path = filedialog.askopenfilename()
-        if file_path and self.current_room:
+        if file_path and self.current_room and self.client:
             username = self.controller.username
-            self.client.send_file(file_path, self.current_room, username)
+            self.client.rm_send_file(self.current_room, file_path)
 
     def initialize_client(self):
-        self.client = Client(self)
-        self.client.connect(socket.gethostname(), 5000)
-        threading.Thread(target=self.client.listen).start()
+        self.client = Client()
+        self.client.sv_connect(socket.gethostname(), 5000)
+        threading.Thread(target=self.client.sv_listen).start()
