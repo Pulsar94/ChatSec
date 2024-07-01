@@ -24,6 +24,7 @@ class Server:
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind((socket.gethostname(), 5000))
         self.serversocket.listen(5)
+        thread.Thread(target=self.rooms.room_guests_checker).start()
         print("Server is ready to receive a connection")
 
     def listen(self):
@@ -36,31 +37,34 @@ class Server:
     
     def handle_client(self, stream, address):
         while True:
-            received = stream.recv(1024)
-            if received != "":
-                if self.rsa.is_encrypted(received):
-                    print(received)
-                    try:
-                        decrypted = self.rsa.decrypt(received)
-                        data = jh.json_decode(decrypted)
-                        print("Client says: ", data)
-                    except:
-                        print("A message has been received but an error occurred while decrypting it.")
-                        self.send(stream, jh.json_encode("error", "An error occurred while decrypting the message."))
-                    
-                    try:
-                        for tag, callback in self.func.tag.items():
+            try:
+                received = stream.recv(1024)
+                if received != "":
+                    if self.rsa.is_encrypted(received):
+                        try:
+                            decrypted = self.rsa.decrypt(received)
+                            data = jh.json_decode(decrypted)
+                            print("Client says: ", data)
+                        except:
+                            print("A message has been received but an error occurred while decrypting it.")
+                            self.send(stream, jh.json_encode("error", "An error occurred while decrypting the message."))
+                        
+                        try:
+                            for tag, callback in self.func.tag.items():
+                                if jh.compare_tag_from_socket(data, tag, callback, stream):
+                                    print("Executed callback for tag", tag)
+                                    break
+                        except:
+                            print("An error occurred while executing the callback. ")
+                    else:
+                        data = jh.json_decode(received.decode())
+                        for tag, callback in self.func.tag_unencrypted.items():
                             if jh.compare_tag_from_socket(data, tag, callback, stream):
                                 print("Executed callback for tag", tag)
                                 break
-                    except:
-                        print("An error occurred while executing the callback. ")
-                else:
-                    data = jh.json_decode(received.decode())
-                    for tag, callback in self.func.tag_unencrypted.items():
-                        if jh.compare_tag_from_socket(data, tag, callback, stream):
-                            print("Executed callback for tag", tag)
-                            break
+            except:
+                print(f"Client {address} has closed the connection.")
+                break
                 
 
     def send(self, connstream, message):
@@ -78,14 +82,13 @@ class Server:
             seg = file.read(512)
             while seg:
                 sleep(0.1)
-                print("Sending file segment: ", seg_count)
+                print("Sending pem file segment: ", seg_count)
                 encoded_seg = base64.b64encode(seg).decode('utf-8')
-                print("Sending file segment: ", encoded_seg)
                 connstream.send(jh.json_encode("get_pem", {"seg": seg_count, "file_name": filename, "file": encoded_seg}).encode())
                 seg = file.read(512)
                 seg_count += 1
             sleep(0.1)
-            print("Sending file segment: end")
+            print("Sending pem file segment: end")
             connstream.send(jh.json_encode("get_pem_end", {"file_name": filename}).encode())
 
     def __del__(self):

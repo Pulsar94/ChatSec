@@ -79,7 +79,7 @@ class func_room:
             "room_file": self.room_file,
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
-            "file_accept_request": self.file_accept_request  # Nouvelle fonction
+            "guest_try": self.guest_try,
         }
         self.files = {}
 
@@ -102,12 +102,10 @@ class func_room:
             for seg in self.files[data["data"]["file_name"]]:
                 file.write(base64.b64decode(seg))
     
-    def file_accept_request(self, data, socket): 
-        username = data["data"]["username"]
-        file_name = data["data"]["file_name"]
-        response = input(f"{username} wants to send you the file {file_name}. Accept? (yes/no): ")
-        if response.lower() == 'yes':
-            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": True}).encode())
-        else:
-            socket.send(jh.json_encode("file_accept_response", {"file_name": file_name, "accepted": False}).encode())
+    def guest_try(self, data, socket):
+        print("Guest try received")
+        client_data = jh.json_encode("guest_try", {})
+        self.client.rm_send(client_data)
+    
+    
    

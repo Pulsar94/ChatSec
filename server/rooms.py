@@ -4,6 +4,7 @@ import socket
 import ssl
 from server.room_function import func
 from shared.certificate import get_or_generate_cert
+from time import sleep
 
 CERT_EXPIRATION_DAYS = 1
 
@@ -28,7 +29,20 @@ class Rooms:
         self.rooms_list = [room.name for room in self.rooms]
         return self.rooms_list
 
+    def room_guests_checker(self):
+        while True:
+            sleep(10)
+            for r in self.rooms:
+                if r.guest_try():
+                    print(f"{r.name} has no guests. Deleting room...")
+                    self.del_room(r)
+
+    def has_guests(self):
+        for r in self.rooms:
+            return len(r.guests) > 0
+
     def del_room(self, room):
+        room.room_socket.close()
         self.rooms.remove(room)
 
 class Room:
@@ -36,7 +50,7 @@ class Room:
         self.name = name
         self.password = password
         self.port = port
-        self.guests = []
+        self.guests = {}
         self.files = {}
 
         self.context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -49,51 +63,89 @@ class Room:
         self.room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.room_socket.bind((socket.gethostname(), self.port))
         self.room_socket.listen(5)
+        thread.Thread(target=self.listen).start()
         print("Room: "+name+" is ready to receive a connection")
 
     def listen(self):
         while True:
-            print("Waiting for connection")
-            (clientsocket, address) = self.room_socket.accept()
-            print("Connection from", address, ". Creating new thread")
-            stream = self.context.wrap_socket(clientsocket, server_side=True)
-            thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
-            self.add_guest(stream, stream.getpeername())
+
+            try:
+                print("Waiting for connection")
+                (clientsocket, address) = self.room_socket.accept()
+                print("Connection from", address, ". Creating new thread")
+                stream = self.context.wrap_socket(clientsocket, server_side=True)
+                thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
+                self.add_guest(stream, stream.getpeername())
+            except:
+                print("Connection failed. Closing socket.")
+                self.room_socket.close()
+                break
     
     def handle_client_room(self, stream, address):
         while True:
-            received = stream.recv(1024).decode()
-            if received != "":
-                data = jh.json_decode(received)
-                print("Client says: ", data)
+            try:
+                received = stream.recv(1024).decode()
+                if received != "":
+                    self.reset_guest_try(address)
+                    data = jh.json_decode(received)
+                    print("Client says: ", data)
 
-                for tag, callback in self.func.tag.items():
-                    if jh.compare_tag_from_socket(data, tag, callback, stream):
-                        print("Executed callback for tag", tag)
-                        break
+                    for tag, callback in self.func.tag.items():
+                        if jh.compare_tag_from_socket(data, tag, callback, stream):
+                            print("Executed callback for tag", tag)
+                            break
+            except:
+                print("Client disconnected")
+                self.remove_guest(address)
+                break
+    
+    def reset_guest_try(self, addr):
+        for key, data in self.guests.items():
+            if key == addr:
+                data["try"] = 3
+
+    def guest_try(self):
+        tbr = []
+        for key, s_data in self.guests.items():
+            s_data["try"] -= 1
+            if s_data["try"] == 0:
+                self.remove_guest(key)
+                print("Guest kicked")
+            else:
+                try:
+                    data = jh.json_encode("guest_try", {})
+                    s_data["socket"].send(data.encode())
+                except:
+                    print("Guest no longer connected")
+                    tbr.append(key)
+        
+        for key in tbr:
+            self.remove_guest(key)
+        
+        return len(self.guests) == 0
 
     def add_guest(self, guest, addr):
-        for sock in self.guests:
-            if list(sock.keys())[0] == addr:
+        for key, data in self.guests.items():
+            if key == addr:
                 print("Guest already in room")
                 return False
-        self.guests.append({addr: guest})
+        self.guests[addr] = {"socket": guest, "try": 3}
         return True
 
     def remove_guest(self, addr):
-        for sock in self.guests:
-            if list(sock.keys())[0] == addr:
-                self.guests.remove(sock)
+        if addr in self.guests:
+            self.guests[addr]["socket"].close()
+            self.guests.pop(addr)
         return self.guests == 0
 
     def get_guests(self):
         return self.guests
 
     def add_message(self, message, username):
-        for sock in self.guests:
-            print("Sending message to guest", list(sock.keys())[0])
-            data = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
-            list(sock.values())[0].send(data.encode())
+        for key, data in self.guests.items():
+            print("Sending message to guest", key)
+            data_to_send = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
+            data["socket"].send(data_to_send.encode())
 
     def add_file(self, filename):
         self.files[filename] = []
@@ -102,12 +154,14 @@ class Room:
         self.files[filename].append(segment)
 
     def add_file_seg_end(self, filename):
-        for sock in self.guests:
+        for key, s_data in self.guests.items():
             seg_count = 0
-            list(sock.values())[0].send(jh.json_encode("room_file", {"file_name": filename}).encode())
+            s_data["socket"].send(jh.json_encode("room_file", {"file_name": filename}).encode())
             for seg in self.files[filename]:
-                print("Sending file segment to guest", list(sock.keys())[0])
+                sleep(0.1)
+                print("Sending file segment to guest", key)
                 data = jh.json_encode("room_file_seg", {"file_name": filename, "seg": seg_count, "file": seg})
-                list(sock.values())[0].send(data.encode())
+                s_data["socket"].send(data.encode())
                 seg_count += 1
-            list(sock.values())[0].send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())
+            sleep(0.1)
+            s_data["socket"].send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())

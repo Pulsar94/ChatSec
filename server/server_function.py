@@ -8,7 +8,7 @@ class func:
     def __init__(self, server):
         self.pem_file = []
         self.server = server
-        self.rooms = rooms.Rooms()
+        self.rooms = server.rooms
         self.port = 5000
         self.tag = {
             "get_rooms": self.get_rooms,
@@ -33,9 +33,8 @@ class func:
         self.port += 1
         room = rooms.Room(data["data"]["room"], self.port, data["data"]["password"])
         if self.rooms.add_room(room):
-            thread.Thread(target=room.listen).start()
             self.server.send_pem(socket, room.name+"-cert")
-            client_data = jh.json_encode("connect_room", {"name":room.name, "port":room.port}) # Here we should also send the public key
+            client_data = jh.json_encode("connect_room", {"name":room.name, "port":room.port})
         else:
             client_data = jh.json_encode('room_already_created', room.name)
         self.server.send(socket, client_data)
@@ -50,7 +49,7 @@ class func:
                 client_data = jh.json_encode("room_wrong_password", "")
             else:
                 self.server.send_pem(socket, room.name+"-cert")
-                client_data = jh.json_encode("connect_room", {"name":room.name, "port":room.port}) # Here we should also send the public key
+                client_data = jh.json_encode("connect_room", {"name":room.name, "port":room.port})
         else:
             client_data = jh.json_encode("room_not_found", "")
         self.server.send(socket, client_data)
