@@ -19,6 +19,7 @@ class Client:
     def __init__(self):
         self.rsa = rsa(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS, PUB_KEY_FILE_CLIENT)
         self.server_key = None
+        self.room_list = []
         
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func_server = func_server(self)
@@ -100,6 +101,10 @@ class Client:
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
         self.sv_send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}))
     
+    def sv_get_rooms(self):
+        self.sv_send(jh.json_encode("get_rooms", {}))
+        
+
     def sv_send(self, message):
         try:
             self.server_key = self.rsa.get_public_key("key-client/server-pub-key.pem")
@@ -133,9 +138,10 @@ class Client:
         except:
             print("Error sending message, no room connected.")
     
-    def rm_send_file(self, file_path):
+
+    def rm_send_file(self, file_path, room, username):
         file_name = os.path.basename(file_path)
-        self.ssl_room_socket.send(jh.json_encode("room_file", {"file_name": "ret_"+file_name}).encode())
+        self.ssl_room_socket.send(jh.json_encode("room_file", {"room": room, "file_name": file_name, "username": username}).encode())
         with open(file_path, 'rb') as file:
             seg_count = 0
             seg = file.read(512)
@@ -143,7 +149,7 @@ class Client:
                 sleep(0.1)
                 print("Sending pem file segment: ", seg_count)
                 encoded_seg = base64.b64encode(seg).decode('utf-8')
-                self.ssl_room_socket.send(jh.json_encode("room_file_seg", {"seg": seg_count, "file_name": "ret_"+file_name, "file": encoded_seg}).encode())
+                self.ssl_room_socket.send(jh.json_encode("room_file_seg", {"room": room, "seg": seg_count, "file_name": file_name, "file": encoded_seg}).encode())
                 seg = file.read(512)
                 seg_count += 1
             sleep(0.1)
