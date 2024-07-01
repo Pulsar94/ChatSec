@@ -69,7 +69,7 @@ class func_server:
 
     def token(self, data, socket):
         print("Token received: ", data["data"])
-        self.client.sv_token = data["data"]["token"]
+        self.client.sv_token(data["data"]["token"])
 
 class func_room:
     def __init__(self, client):
