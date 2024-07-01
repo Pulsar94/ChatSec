@@ -25,7 +25,8 @@ class Rooms:
                 return r
 
     def get_rooms(self):
-        return self.rooms
+        self.rooms_list = [room.name for room in self.rooms]
+        return self.rooms_list
 
     def del_room(self, room):
         self.rooms.remove(room)

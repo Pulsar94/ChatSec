@@ -29,12 +29,8 @@ class RoomPage(ttk.Frame):
 
 
     def actualise(self):
-        self.client.send(jh.json_encode("get_rooms", {}))
-        #time.sleep(0.01) # wait for the server to respond
-        for r in (self.client.rooms):
-            if r not in self.room_list.get(0, tk.END):
-                self.room_list.insert(tk.END, r)
-
+        if self.client :
+            self.client.sv_send(jh.json_encode("get_rooms", {}))
 
     def createwindow(self):
         self.popup = tk.Toplevel(self)
@@ -66,23 +62,24 @@ class RoomPage(ttk.Frame):
 
        
     def create_room(self,room_name,room_password):
-        self.controller.frames["RoomPage"].client.rm_send_message(jh.json_encode("create_room", {"name": room_name, "password": room_password}))
+        self.controller.frames["RoomPage"].client.sv_create_room({"name": room_name, "password": room_password})
         self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
         self.controller.frames["RoomPage"].chat_histories[room_name] = []
         self.popup.destroy()
                 
 
     def initialize_client(self):
-        self.client = Client(self)
+        self.client = Client()
         self.client.sv_connect(socket.gethostname(), 5000)
         threading.Thread(target=self.client.sv_listen).start()
 
     def join_room(self):
-        selected_indices = self.room_list.curselection()
-        if selected_indices:
-            selected_index = selected_indices[0]
-            self.selected_room = self.room_list.get(selected_index)
-            self.room_verification(self.selected_room)
+        if self.room_list:
+            selected_indices = self.room_list.curselection()
+            if selected_indices:
+                selected_index = selected_indices[0]
+                self.selected_room = self.room_list.get(selected_index)
+                self.room_verification(self.selected_room)
 
 
     def room_verification(self, room):
@@ -105,13 +102,13 @@ class RoomPage(ttk.Frame):
         self.room_verif.wait_window()
 
     def room_verification_check(self,room,password):
-        self.client.rm_connect(jh.json_encode("join_room", {"room": room})) # "password": password
-        self.controller.show_frame("ChatPage")
-        self.controller.frames["ChatPage"].current_room = self.selected_room
-        self.controller.frames["ChatPage"].update_chat_history()
-        self.controller.frames["ChatPage"].initialize_client()
-        self.client.rm_connect(jh.json_encode("join_room", {"room": self.selected_room}))
-        self.room_verif.destroy()
+        if self.client :
+            self.client.sv_connect_room(room=room, password=password) # "password": password
+            self.controller.show_frame("ChatPage")
+            self.controller.frames["ChatPage"].current_room = self.selected_room
+            self.controller.frames["ChatPage"].update_chat_history()
+            self.controller.frames["ChatPage"].initialize_client()
+            self.room_verif.destroy()
 
     def update_room_history(self):
         self.controller.frames["ChatPage"].update_chat_history()

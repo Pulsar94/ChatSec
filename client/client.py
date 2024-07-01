@@ -19,6 +19,7 @@ class Client:
     def __init__(self):
         self.rsa = rsa(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS, PUB_KEY_FILE_CLIENT)
         self.server_key = None
+        self.room_list = []
         
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func_server = func_server(self)
@@ -100,6 +101,10 @@ class Client:
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
         self.sv_send(jh.json_encode("connect_room", {"room": room, "password": hashed_password}))
     
+    def sv_get_rooms(self):
+        self.sv_send(jh.json_encode("get_rooms", {}))
+        
+
     def sv_send(self, message):
         try:
             self.server_key = self.rsa.get_public_key("key-client/server-pub-key.pem")

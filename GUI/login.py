@@ -20,6 +20,6 @@ class LoginPage(ttk.Frame):
 
     def login(self):
         self.controller.username = self.username.get()
-        self.controller.show_frame("RoomPage")
+        self.controller.show_frame(page_name="RoomPage")
         self.controller.frames["RoomPage"].initialize_client()
         self.controller.frames["RoomPage"].actualise()

@@ -19,7 +19,7 @@ class ChatApp(tk.Tk):
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
         self.frames = {}
-        for F in (LoginPage, RoomPage, ChatPage):
+        for F in (RoomPage, ChatPage, LoginPage):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame

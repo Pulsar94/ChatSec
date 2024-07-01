@@ -11,6 +11,7 @@ class func:
         self.rooms = rooms.Rooms()
         self.port = 5000
         self.tag = {
+            "get_rooms": self.get_rooms,
             "create_room": self.create_room,
             "connect_room": self.connect_room,
             "room_disconnect": self.handle_room_disconnect,
@@ -22,6 +23,11 @@ class func:
             "get_pem": self.get_pem,
             "get_pem_end": self.get_pem_end,
         }
+
+    def get_rooms(self, data, socket):
+        rooms = self.rooms.get_rooms()
+        client_data = jh.json_encode("get_rooms", rooms)
+        self.server.send(socket, client_data)
 
     def create_room(self, data, socket):
         self.port += 1
