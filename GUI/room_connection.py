@@ -11,7 +11,6 @@ class RoomPage(ttk.Frame):
         self.controller = controller
         self.chat_histories = {}
         self.client = None
-        self.room_list = None
         self.verif= True
         self.create_widgets()
 
@@ -29,8 +28,11 @@ class RoomPage(ttk.Frame):
 
 
     def actualise(self):
-        if self.client :
+        if self.client:
             self.client.sv_send(jh.json_encode("get_rooms", {}))
+            self.room_list.delete(0, tk.END)
+            for r in self.client.room_list:
+                self.room_list.insert(tk.END, r)
 
     def createwindow(self):
         self.popup = tk.Toplevel(self)
@@ -62,7 +64,7 @@ class RoomPage(ttk.Frame):
 
        
     def create_room(self,room_name,room_password):
-        self.controller.frames["RoomPage"].client.sv_create_room({"name": room_name, "password": room_password})
+        self.controller.frames["RoomPage"].client.sv_create_room(room_name, room_password)
         self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
         self.controller.frames["RoomPage"].chat_histories[room_name] = []
         self.popup.destroy()
@@ -74,12 +76,11 @@ class RoomPage(ttk.Frame):
         threading.Thread(target=self.client.sv_listen).start()
 
     def join_room(self):
-        if self.room_list:
-            selected_indices = self.room_list.curselection()
-            if selected_indices:
-                selected_index = selected_indices[0]
-                self.selected_room = self.room_list.get(selected_index)
-                self.room_verification(self.selected_room)
+        selected_indices = self.room_list.curselection()
+        if selected_indices:
+            selected_index = selected_indices[0]
+            self.selected_room = self.room_list.get(selected_index)
+            self.room_verification(self.selected_room)
 
 
     def room_verification(self, room):
@@ -103,7 +104,7 @@ class RoomPage(ttk.Frame):
 
     def room_verification_check(self,room,password):
         if self.client :
-            self.client.sv_connect_room(room=room, password=password) # "password": password
+            self.client.sv_connect_room(room, password) # "password": password
             self.controller.show_frame("ChatPage")
             self.controller.frames["ChatPage"].current_room = self.selected_room
             self.controller.frames["ChatPage"].update_chat_history()

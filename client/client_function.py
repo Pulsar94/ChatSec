@@ -48,7 +48,7 @@ class func_server:
     
     def need_pem(self, data, socket):
         filename = "client-pub-key"
-        self.client.sv_send_pem(filename)
+        self.client.server_socket.send(jh.json_encode("need_pem",{}).encode())
     
     def get_pem_start(self, data, socket):
         self.filename = data["data"]["file_name"]

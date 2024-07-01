@@ -36,6 +36,8 @@ class ChatPage(ttk.Frame):
         send_button.pack(pady=5, padx=10)
         send_file_button = ttk.Button(right_frame, text="Envoyer un fichier", command=self.select_and_send_file)
         send_file_button.pack(pady=5, padx=10)
+        return_to_room = ttk.Button(right_frame, text="Retour aux salles", command=self.return_to_room)
+        return_to_room.pack(pady=5, padx=10)
 
         self.current_room = None
 
@@ -64,7 +66,9 @@ class ChatPage(ttk.Frame):
             self.client.rm_send_message(jh.json_encode("room_message", {"username": username, "message": message}), self.current_room)
             self.message_entry.delete(0, tk.END)
 
-
+    def return_to_room(self):
+        self.controller.show_frame("RoomPage")
+        self.controller.frames["RoomPage"].actualise()
 
     def select_and_send_file(self):
         file_path = filedialog.askopenfilename()
@@ -126,6 +130,8 @@ class CountdownDialog(tk.Toplevel):
     def decline(self):
         self.result = False
         self.destroy()
+
+
 
 def on_file_received(parent, file_name, file_data):
     save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")

@@ -19,19 +19,24 @@ class ChatApp(tk.Tk):
         container = ttk.Frame(self)
         container.pack(fill="both", expand=True)
         self.frames = {}
-        for F in (RoomPage, ChatPage, LoginPage):
+        for F in (LoginPage, RoomPage, ChatPage):
             page_name = F.__name__
-            frame = F(parent=container, controller=self)
-            self.frames[page_name] = frame
-            frame.grid(row=0, column=0, sticky="nsew")
-        self.show_frame("LoginPage")
+            self.frame = F(parent=container, controller=self)
+            self.frames[page_name] = self.frame
+            self.frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame("LoginPage")
         
+        
+    # def show_frame(self, page_name):
+    #     print('show_frame:', page_name)
+    #     if page_name in self.frames:
+    #         self.frame.grid_forget() # Remove current frame from display
+    #         self.frame = self.frames[page_name]
+    #         print('frame',self.frame)  # Set new frame
+    #         self.frame.grid(row=0, column=0, sticky="nsew")  # Display new frame
+    #     else:
+    #         print(f"Error: Frame '{page_name}' does not exist.")
 
     def show_frame(self, page_name):
-        frame = self.frames[page_name]
-        
-
-if __name__ == "__main__":
-    app = ChatApp()
-    app.mainloop()
+        self.frame = self.frames[page_name]
+        self.frame.tkraise()

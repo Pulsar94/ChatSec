@@ -39,6 +39,7 @@ class Server:
             received = stream.recv(1024)
             if received != "":
                 if self.rsa.is_encrypted(received):
+                    print(received)
                     try:
                         decrypted = self.rsa.decrypt(received)
                         data = jh.json_decode(decrypted)
