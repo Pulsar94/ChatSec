@@ -1,2 +1,3 @@
 cryptography~=42.0.8
 rsa~=4.9
+PyJWT~=2.8.0

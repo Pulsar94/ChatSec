@@ -3,13 +3,14 @@ import shared.json_handler as jh
 import threading as thread
 from os import makedirs
 import base64
-import authenticator
+import server.authenticator as authenticator
 import time
 import json
 
 class func:
     def __init__(self, server):
         self.pem_file = []
+        self.token = {}
         self.server = server
         self.rooms = server.rooms
         self.port = 5000
@@ -100,11 +101,13 @@ class func:
             # Check if the password is correct
             if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
                 # Send a message to the client that the authentication was successful
-                client_data = jh.json_encode("authenticated", "")
+                token = authenticator.Authenticator().token()
+                self.token[data["data"]["username"]] = token
+                client_data = jh.json_encode("authenticated", {"token": token})
                 socket.send(client_data.encode())
                 # Log the connection
                 try:
-                    with open('../Logs/connection.log', 'a') as file:
+                    with open('Logs/connection.log', 'a') as file:
                         file.write(
                             f"{time.asctime()} - {data['data']['username']} connected from IP {socket.getpeername()[0]}\n")
 
@@ -116,7 +119,7 @@ class func:
                 socket.send(client_data.encode())
                 # Log the failed connection
                 try:
-                    with open('../Logs/connection.log', 'a') as file:
+                    with open('Logs/connection.log', 'a') as file:
                         file.write(
                             f"{time.asctime()} - {data['data']['username']} failed to connect from IP {socket.getpeername()[0]}\n")
                 except IOError as e:
@@ -127,7 +130,7 @@ class func:
             socket.send(client_data.encode())
             # Log the failed connection
             try:
-                with open('../Logs/connection.log', 'a') as file:
+                with open('Logs/connection.log', 'a') as file:
                     file.write(
                         f"{time.asctime()} - {data['data']['username']} user doesn't exist. Attempted connection from IP {socket.getpeername()[0]}\n")
             except IOError as e:
@@ -140,6 +143,10 @@ class func:
         :param socket:
         :return: none
         """
+        if data["data"]["token"] != self.token[data["data"]["username"]]:
+            client_data = jh.json_encode("authentication_failed", "")
+            socket.send(client_data.encode())
+            return
         # Check if the user already exists
         if data["data"]["username"] not in self.users_authentification:
             # Add the user to the database
@@ -147,7 +154,7 @@ class func:
             self.users_info[data["data"]["username"]]["name"] = data["data"]["name"]
             # Save the new user to the database
             try:
-                with open('./DB_authentication.json', 'w') as file:
+                with open('server/DB_authentication.json', 'w') as file:
                     json.dump({'users': self.users_info}, file, sort_keys=True, indent=3, separators=(',', ': '))
             except IOError as e:
                 print(e)
@@ -159,7 +166,7 @@ class func:
             socket.send(client_data.encode())
             # Log the addition of the user
             try:
-                with open('../Logs/DB_actions.log', 'a') as file:
+                with open('Logs/DB_actions.log', 'a') as file:
                     file.write(f"{time.asctime()} - {data['data']['username']} added to DB\n")
             except IOError as e:
                 print(e)
