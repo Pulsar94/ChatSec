@@ -69,9 +69,7 @@ class func_server:
 
     def token(self, data, socket):
         print("Token received: ", data["data"])
-        self.client.token = data["data"]["token"]
-        client_data = jh.json_encode("token", {"token": self.client.token})
-        self.client.sv_send(client_data)
+        self.client.sv_token = data["data"]["token"]
 
 class func_room:
     def __init__(self, client):

@@ -1,7 +1,7 @@
 import server.rooms as rooms
 import shared.json_handler as jh
 import threading as thread
-from os import makedirs
+import os
 import base64
 import server.authenticator as authenticator
 import time
@@ -32,6 +32,12 @@ class func:
         }
 
     def create_room(self, data, socket):
+        # Check if the token is valid
+        if data["data"]["token"] != self.token[data["data"]["username"]]:
+            client_data = jh.json_encode("authentication_failed", "")
+            socket.send(client_data.encode())
+            return
+
         self.port += 1
         room = rooms.Room(data["data"]["room"], self.port, data["data"]["password"])
         if self.rooms.add_room(room):
@@ -78,7 +84,7 @@ class func:
         self.pem_file.append(data["data"]["file"])
 
     def get_pem_end(self, data, socket):
-        makedirs("key-server", exist_ok=True)
+        os.makedirs("key-server", exist_ok=True)
         with open("key-server/"+str(socket.getpeername()[0])+"-pub-key.pem", 'wb') as file:
             for seg in self.pem_file:
                 file.write(base64.b64decode(seg))
@@ -96,6 +102,10 @@ class func:
         :param socket:
         :return:
         """
+        path = "Logs"
+        # Check if the directory exists
+        if not os.path.exists(path):
+            os.makedirs(path)
         # Check if the user exists
         if data["data"]["username"] in self.users_authentification:
             # Check if the password is correct
@@ -143,10 +153,6 @@ class func:
         :param socket:
         :return: none
         """
-        if data["data"]["token"] != self.token[data["data"]["username"]]:
-            client_data = jh.json_encode("authentication_failed", "")
-            socket.send(client_data.encode())
-            return
         # Check if the user already exists
         if data["data"]["username"] not in self.users_authentification:
             # Add the user to the database

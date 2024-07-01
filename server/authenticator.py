@@ -30,7 +30,7 @@ class Authenticator:
         # Définir le contenu du token
         payload = {
             'username': 'test',
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1)
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
         }
         # Création du token
         token = jwt.encode(payload, secret_key, algorithm='HS256')

@@ -23,7 +23,11 @@ class Client:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func_server = func_server(self)
         self.func_room = func_room(self)
-    
+        self.user_token = ""
+
+    def sv_token(self, token):
+        self.user_token = token
+
     def sv_connect(self, host, port):
         try:
             self.server_socket.connect((host, port))
@@ -104,7 +108,7 @@ class Client:
         hashed_password = ""
         if password != "":
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        self.sv_send(jh.json_encode("create_room", {"room": room, "password": hashed_password}))
+        self.sv_send(jh.json_encode("create_room", {"room": room, "password": hashed_password, "token": self.user_token}))
     
     def sv_connect_room(self, room, password):
         hashed_password = ""
