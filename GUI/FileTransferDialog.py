@@ -4,7 +4,7 @@ import base64
 from shared.json_handler import json_encode
 
 class FileTransferDialog(Toplevel):
-    def __init__(self, parent, file_name, size, client, timeout=30):
+    def __init__(self, parent, file_name, user, size, client, timeout=30):
         super().__init__(parent)
         self.title("File Received")
         self.file_name = file_name
@@ -12,7 +12,7 @@ class FileTransferDialog(Toplevel):
         self.result = None
         self.client = client
         
-        self.label = ttk.Label(self, text=f"Someone wants to send you the file {file_name} (size {size} bytes). Do you want to accept?")
+        self.label = ttk.Label(self, text=f"{user} wants to send you the file {file_name} (size {size} bytes). Do you want to accept?")
         self.label.pack(pady=10)
 
         self.countdown_label = ttk.Label(self, text=f"Time remaining: {self.timeout} seconds")

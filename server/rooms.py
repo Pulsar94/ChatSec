@@ -75,7 +75,8 @@ class Room:
                 print("Connection from", address, ". Creating new thread")
                 stream = self.context.wrap_socket(clientsocket, server_side=True)
                 thread.Thread(target=self.handle_client_room, args=(stream, address)).start()
-                self.add_guest(stream, stream.getpeername())
+                stream.send(jh.json_encode("need_token", {}).encode())
+                
             except:
                 print("Connection failed. Closing socket.")
                 self.room_socket.close()
@@ -122,29 +123,35 @@ class Room:
         for key in tbr:
             self.remove_guest(key)
         
+        self.update_guests_list()
+        
         return len(self.guests) == 0
 
-    def add_guest(self, guest, addr):
+    def add_guest(self, guest, addr, name):
         for key, data in self.guests.items():
             if key == addr:
                 print("Guest already in room")
                 return False
-        self.guests[addr] = {"socket": guest, "try": 3, "username": None}
+        self.guests[addr] = {"socket": guest, "try": 3, "username": name}
+        self.update_guests_list()
         return True
 
     def remove_guest(self, addr):
         if addr in self.guests:
             self.guests[addr]["socket"].close()
             self.guests.pop(addr)
+        self.update_guests_list()
         return self.guests == 0
 
-    def get_guests(self):
-        return self.guests
+    def update_guests_list(self):
+        for key, data in self.guests.items():
+            data_to_send = jh.json_encode("update_guests_list", {"guests": [data["username"] for key, data in self.guests.items()]})
+            data["socket"].send(data_to_send.encode())
 
     def add_message(self, message, username):
         for key, data in self.guests.items():
             print("Sending message to guest", key)
-            data_to_send = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
+            data_to_send = jh.json_encode("room_message", {"room": self.name, "username": data["username"], "message": message})
             data["socket"].send(data_to_send.encode())
 
     def add_file(self, filename, owner):
@@ -160,7 +167,7 @@ class Room:
         for key, s_data in self.guests.items():
             if key != self.files[filename]["owner"]:
                 file_size = len(self.files[filename]["file"])
-                data_to_send = jh.json_encode("room_file_request", {"name": filename, "size": file_size})
+                data_to_send = jh.json_encode("room_file_request", {"username": self.guests[self.files[filename]["owner"]]["username"], "name": filename, "size": file_size})
 
                 s_data["socket"].send(data_to_send.encode())
         

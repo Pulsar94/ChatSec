@@ -1,10 +1,12 @@
 import shared.json_handler as jh
-from time import sleep
+import server.authenticator as auth
 
 class func:
     def __init__(self, room):
         self.room = room
+        self.users = auth.Authenticator().extract_all_user_info()
         self.tag = {
+            "need_token": self.need_token,
             "room_disconnect": self.room_disconnect, 
             "room_message": self.handle_room_message,
             "room_file": self.room_file,
@@ -13,6 +15,13 @@ class func:
             "guest_try": self.guest_try,
             "room_file_request": self.room_file_request,
         }
+    
+    def need_token(self, data, socket):
+        print("Token received: ", data["data"]["token"])
+        user = self.users[data["data"]["name"]]
+        if user["password"] != data["data"]["token"]:
+            return
+        self.room.add_guest(socket, socket.getpeername(), user["name"])
     
     def room_disconnect(self, data, socket):
         self.room.remove_guest(socket.getpeername())

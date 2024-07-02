@@ -41,9 +41,10 @@ class func_server:
         port = data["data"]["port"]
         name = data["data"]["name"]
         self.client.rm_connect(host, port, name)
+        self.contr.frames["RoomPage"].enter_room()
     
     def room_wrong_password(self, data, socket):
-        print("Wrong password")
+        self.contr.frames["RoomPage"].update_text("Wrong password. Please try again.")
 
     def room_found(self, data, socket):
         print("Room found")
@@ -93,14 +94,19 @@ class func_room:
         self.client = client
         self.contr = client.contr
         self.tag = {
+            "need_token": self.need_token,
             "room_message": self.room_message,
             "room_file": self.room_file,
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
             "guest_try": self.guest_try,
             "room_file_request": self.room_file_request,
+            "update_guests_list": self.update_guests_list,
         }
         self.files = {}
+    
+    def need_token(self, data, socket):
+        self.client.rm_send(jh.json_encode("need_token", {"name": self.contr.username, "token": self.client.user_mdp}))
 
     def room_message(self, data, socket):
         print("message received: ", data["data"])
@@ -125,9 +131,14 @@ class func_room:
         self.client.rm_send(client_data)
     
     def room_file_request(self, data, socket):
+        user = data["data"]["username"]
         filename = data["data"]["name"]
         size = data["data"]["size"]
-        GUI.FileTransferDialog.FileTransferDialog(self.contr, filename, size, self.client)
+        GUI.FileTransferDialog.FileTransferDialog(self.contr, filename, user, size, self.client)
+
+    def update_guests_list(self, data, socket):
+        print("Guests: ", data["data"]["guests"])
+        self.contr.frames["ChatPage"].update_users(data["data"]["guests"])
     
     
    

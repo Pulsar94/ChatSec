@@ -10,6 +10,7 @@ class RoomPage(ttk.Frame):
         self.chat_histories = {}
         self.client = controller.client
         self.verif= True
+        self.room_verif = None
         self.create_widgets()
 
     def create_widgets(self):
@@ -93,6 +94,9 @@ class RoomPage(ttk.Frame):
         self.room_password_entry.insert(0, "Password")
         self.room_password_entry.pack(pady=5, padx=10)
 
+        self.text = ttk.Label(self.room_verif, text="")
+        self.text.pack(pady=10, padx=10)
+
         self.room_verif_button = ttk.Button(self.room_verif, text="Join Room", command=lambda :self.room_verification_check(room,self.room_password_entry.get()))
         self.room_verif_button.pack(pady=5, padx=10)
 
@@ -101,17 +105,20 @@ class RoomPage(ttk.Frame):
         self.room_verif.wait_window()
 
     def room_verification_check(self,room,password):
-        print("Room verification check")
         if self.client :
             if self.client.ssl_room_socket:
                 self.client.ssl_room_socket.close()
-            print("Room verification check2")
             self.client.sv_connect_room(room, password)
-            self.controller.show_frame("ChatPage")
-            self.controller.frames["ChatPage"].current_room = self.selected_room
-            self.controller.frames["ChatPage"].update_chat_history()
+    
+    def enter_room(self):
+        self.controller.show_frame("ChatPage")
+        self.controller.frames["ChatPage"].current_room = self.selected_room
+        self.controller.frames["ChatPage"].update_chat_history()
+        if self.room_verif:
             self.room_verif.destroy()
-            print("Room verification check3")
+    
+    def update_text(self, text):
+        self.text.config(text=text)
 
     def update_room_history(self):
         self.controller.frames["ChatPage"].update_chat_history()

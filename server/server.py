@@ -65,7 +65,6 @@ class Server:
             #except:
                 #print(f"Client {address} has closed the connection.")
                 #break
-                
 
     def send(self, connstream, message):
         public_key = self.rsa.get_public_key("key-server/"+str(connstream.getpeername()[0])+"-pub-key.pem")

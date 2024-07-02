@@ -10,6 +10,7 @@ class LoginPage(ttk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.client = controller.client
+        self.new_user = None
         self.create_widgets()
 
     def create_widgets(self):
@@ -48,3 +49,50 @@ class LoginPage(ttk.Frame):
         threading.Thread(target=self.client.sv_listen).start()
         sleep(1)
         self.client.sv_authentification(username, password)
+
+    def add_account(self):
+        self.new_user = tk.Toplevel(self)
+        self.new_user.title("Add User")
+        self.new_user.geometry("300x200")  # Width x Height
+
+        mail_label = ttk.Label(self.new_user, text="Enter your mail:")
+        mail_label.pack(pady=10, padx=10)
+
+        mail_entry = ttk.Entry(self.new_user)
+        mail_entry.pack(pady=5, padx=10)
+
+        username_label = ttk.Label(self.new_user, text="Enter your username:")
+        username_label.pack(pady=10, padx=10)
+
+        username_entry = ttk.Entry(self.new_user)
+        username_entry.pack(pady=5, padx=10)
+
+        password_label = ttk.Label(self.new_user, text="Enter your password:")
+        password_label.pack(pady=10, padx=10)
+
+        password_entry = ttk.Entry(self.new_user, show="*")
+        password_entry.pack(pady=5, padx=10)
+
+        self.new_user_text = ttk.Label(self.new_user, text="Add User")
+        self.new_user_text.pack(pady=10, padx=10)
+
+        self.new_user_button = ttk.Button(self.new_user, text="Add Account", command=lambda :self.check_and_send_new_user(username_entry.get(), password_entry.get(), mail_entry.get()))
+        self.new_user_button.pack(pady=5, padx=10)
+
+        self.new_user.grab_set()
+        self.new_user.focus_set()
+        self.new_user.wait_window()
+    
+    def check_and_send_new_user(self, username, password, mail):
+        if mail.find("@") == -1:
+            self.new_user_text.config(text="Please enter a valid mail.")
+            return
+        if not username or not password or not mail:
+            self.new_user_text.config(text="Please fill all fields.")
+            return
+        
+        self.client.sv_add_user(mail, password, username)
+        if self.new_user:
+            self.new_user.destroy()
+        
+            
