@@ -67,17 +67,17 @@ class Client:
             received = self.server_socket.recv(1024)
             if received != "":
                 if self.rsa.is_encrypted(received):
-                    #try:
-                    decrypted = self.rsa.decrypt(received)
-                    data = jh.json_decode(decrypted)
-                    print("Server says: ", data)
+                    try:
+                        decrypted = self.rsa.decrypt(received)
+                        data = jh.json_decode(decrypted)
+                        print("Server says: ", data)
 
-                    for tag, callback in self.func_server.tag.items():
-                        if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
-                            print("Executed callback for tag", tag)
-                            break
-                    #except:
-                        #print("A message has been received but an error occurred while decrypting it. Ignoring message...")
+                        for tag, callback in self.func_server.tag.items():
+                            if jh.compare_tag_from_socket(data, tag, callback, self.server_socket):
+                                print("Executed callback for tag", tag)
+                                break
+                    except:
+                        print("A message has been received but an error occurred while decrypting it. Ignoring message...")
                 else:
                     try:
                         data = jh.json_decode(received.decode())
@@ -95,17 +95,17 @@ class Client:
             while True:
                 received = self.ssl_room_socket.recv(1024)
                 print("Received: ", received)
-                #try:
-                if received != "":
-                    data = jh.json_decode(received)
-                    print("Server says: ", data)
+                try:
+                    if received != "":
+                        data = jh.json_decode(received)
+                        print("Server says: ", data)
 
-                    for tag, callback in self.func_room.tag.items():
-                        if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
-                            print("Executed callback for tag", tag)
-                            break
-                #except:
-                    #print("An error occurred while processing the room message. Ignoring message...")
+                        for tag, callback in self.func_room.tag.items():
+                            if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
+                                print("Executed callback for tag", tag)
+                                break
+                except:
+                    print("An error occurred while processing the room message. Ignoring message...")
 
     def sv_authentification(self, username, password):
         hashed_password = ""
