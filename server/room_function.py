@@ -41,5 +41,4 @@ class func:
                 guest_socket.send(jh.json_encode("room_file_seg_end", {"file_name": data["data"]["file_name"]}).encode())
 
     def guest_try(self, data, socket):
-        print("Guest try received")
         self.room.reset_guest_try(socket.getpeername())

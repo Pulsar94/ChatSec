@@ -55,7 +55,7 @@ class RoomPage(ttk.Frame):
         self.room_password_entry = ttk.Entry(self.popup)
         self.room_password_entry.insert(0, "Password")
         self.room_password_entry.pack(pady=5, padx=10)
-                                                                    #self.send(jh.json_encode("create_room", {"name": "room1", "password": "1234"}))
+
         create_room_button = ttk.Button(self.popup, text="Create Room", command=lambda :self.create_room(self.room_name_entry.get(),self.room_password_entry.get()))
         create_room_button.pack(pady=5, padx=10)
 
@@ -106,11 +106,12 @@ class RoomPage(ttk.Frame):
 
     def room_verification_check(self,room,password):
         if self.client :
-            self.client.sv_connect_room(room, password) # "password": password
+            if not self.client.ssl_room_socket:
+                self.client.sv_connect_room(room, password)
             self.controller.show_frame("ChatPage")
             self.controller.frames["ChatPage"].current_room = self.selected_room
             self.controller.frames["ChatPage"].update_chat_history()
-            self.controller.frames["ChatPage"].initialize_client()
+            self.controller.frames["ChatPage"].link_client(self.client)
             self.room_verif.destroy()
 
     def update_room_history(self):

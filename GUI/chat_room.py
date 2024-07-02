@@ -1,10 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-import threading
-import socket
-import shared.json_handler as jh
-from client.client import Client
 import base64
 
 class ChatPage(ttk.Frame):
@@ -24,7 +20,7 @@ class ChatPage(ttk.Frame):
         user_list_label.pack(pady=10, padx=10)
         self.user_list = tk.Listbox(left_frame)
         self.user_list.pack(fill="y", expand=True, pady=5, padx=10)
-        self.user_list.bind(self.get_users)
+        #self.user_list.bind(self.get_users)
         chat_label = ttk.Label(right_frame, text="Chat")
         chat_label.pack(pady=10, padx=10)
         self.chat_text = tk.Text(right_frame, state="disabled")
@@ -59,7 +55,7 @@ class ChatPage(ttk.Frame):
         message = self.message_entry.get()
         if message and self.current_room and self.client:
             username = self.controller.username
-            self.client.rm_send_message(jh.json_encode("room_message", {"username": username, "message": message}), self.current_room)
+            self.client.rm_send_message(message, username)
             self.message_entry.delete(0, tk.END)
 
     def return_to_room(self):
@@ -73,11 +69,8 @@ class ChatPage(ttk.Frame):
             username = self.controller.username
             self.client.rm_send_file(file_path,self.current_room, username)
 
-    def initialize_client(self):
-        self.client = Client()
-        self.client.sv_connect(socket.gethostname(), 5000)
-        threading.Thread(target=self.client.rm_listen).start()
-
+    def link_client(self, client):
+        self.client = client
 
 class CountdownDialog(tk.Toplevel):
     def __init__(self, parent, file_name, username, timeout=30):

@@ -103,7 +103,6 @@ class func_room:
                 file.write(base64.b64decode(seg))
     
     def guest_try(self, data, socket):
-        print("Guest try received")
         client_data = jh.json_encode("guest_try", {})
         self.client.rm_send(client_data)
     
