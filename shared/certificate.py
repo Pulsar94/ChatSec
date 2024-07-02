@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 
-def get_or_generate_cert(cert_file, key_file, cert_expiration_days):
+def get_or_generate_cert(cert_file, key_file, cert_expiration_days, pub_key_file=None):
         if os.path.exists(cert_file) and os.path.exists(key_file):
             cert = x509.load_pem_x509_certificate(open(cert_file, 'rb').read(), default_backend())
             if cert.not_valid_after_utc > datetime.datetime.now(datetime.UTC):
@@ -32,6 +32,9 @@ def get_or_generate_cert(cert_file, key_file, cert_expiration_days):
             .add_extension(x509.SubjectAlternativeName([x509.DNSName(u"localhost")]), critical=False)
             .sign(key, hashes.SHA256(), default_backend())
         )
+
+        os.makedirs(os.path.dirname(cert_file), exist_ok=True)
+        os.makedirs(os.path.dirname(key_file), exist_ok=True)
         
         with open(cert_file, "wb") as f:
             f.write(cert.public_bytes(serialization.Encoding.PEM))
@@ -43,4 +46,12 @@ def get_or_generate_cert(cert_file, key_file, cert_expiration_days):
                 encryption_algorithm=serialization.NoEncryption()
             ))
         
-        return cert_file, key_file
+        if pub_key_file is not None:
+            public_key = key.public_key()
+            with open(pub_key_file, "wb") as f:
+                f.write(public_key.public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.PKCS1
+                ))
+        
+        return cert_file, key_file, pub_key_file
