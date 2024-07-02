@@ -16,7 +16,8 @@ PUB_KEY_FILE_CLIENT = "key-client/client-pub-key.pem"
 CERT_EXPIRATION_DAYS = 1
 
 class Client:
-    def __init__(self):
+    def __init__(self, controller):
+        self.contr = controller
         self.rsa = rsa(CERT_FILE_CLIENT, KEY_FILE_CLIENT, CERT_EXPIRATION_DAYS, PUB_KEY_FILE_CLIENT)
         self.server_key = None
         self.room_list = []
@@ -31,6 +32,7 @@ class Client:
 
     def sv_connect(self, host, port):
         try:
+            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.connect((host, port))
             print("Connected to server {} on port {}".format(host, port))
             self.server_socket.send(jh.json_encode("need_pem",{}).encode())

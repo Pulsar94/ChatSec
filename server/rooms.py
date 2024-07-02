@@ -129,7 +129,7 @@ class Room:
             if key == addr:
                 print("Guest already in room")
                 return False
-        self.guests[addr] = {"socket": guest, "try": 3}
+        self.guests[addr] = {"socket": guest, "try": 3, "username": None}
         return True
 
     def remove_guest(self, addr):

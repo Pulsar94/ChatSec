@@ -1,9 +1,6 @@
 from tkinter import ttk
 from time import sleep
 import tkinter as tk
-import threading
-import socket
-from client.client import Client
 import shared.json_handler as jh
 
 class RoomPage(ttk.Frame):
@@ -11,12 +8,12 @@ class RoomPage(ttk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.chat_histories = {}
-        self.client = None
+        self.client = controller.client
         self.verif= True
         self.create_widgets()
 
     def create_widgets(self):
-        label = ttk.Label(self, text="Liste des rooms")
+        label = ttk.Label(self, text="Rooms List")
         label.pack(pady=10, padx=10)
         self.room_list = tk.Listbox(self)
         self.room_list.pack(fill="both", expand=True, pady=5, padx=10)
@@ -26,7 +23,6 @@ class RoomPage(ttk.Frame):
         create_button.pack(pady=5, padx=10)
         actualise_button = ttk.Button(self, text=chr(0x21BB), command=self.actualise)
         actualise_button.pack(side="left",pady=5)
-
 
     def actualise(self):
         if self.client:
@@ -64,18 +60,11 @@ class RoomPage(ttk.Frame):
         self.popup.focus_set()
         self.popup.wait_window()
 
-       
     def create_room(self,room_name,room_password):
         self.controller.frames["RoomPage"].client.sv_create_room(room_name, room_password)
         self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
         self.controller.frames["RoomPage"].chat_histories[room_name] = []
         self.popup.destroy()
-                
-
-    def initialize_client(self):
-        self.client = Client()
-        self.client.sv_connect(socket.gethostname(), 5000)
-        threading.Thread(target=self.client.sv_listen).start()
 
     def join_room(self):
         selected_indices = self.room_list.curselection()
@@ -83,7 +72,6 @@ class RoomPage(ttk.Frame):
             selected_index = selected_indices[0]
             self.selected_room = self.room_list.get(selected_index)
             self.room_verification(self.selected_room)
-
 
     def room_verification(self, room):
         self.room_verif = tk.Toplevel(self)
@@ -111,7 +99,6 @@ class RoomPage(ttk.Frame):
             self.controller.show_frame("ChatPage")
             self.controller.frames["ChatPage"].current_room = self.selected_room
             self.controller.frames["ChatPage"].update_chat_history()
-            self.controller.frames["ChatPage"].link_client(self.client)
             self.room_verif.destroy()
 
     def update_room_history(self):

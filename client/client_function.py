@@ -6,6 +6,7 @@ import base64
 class func_server:
     def __init__(self, client):
         self.client = client
+        self.contr = client.contr
         self.pem_file, self.filename = [], ""
         self.tag = {
             "room_already_connected": self.room_already_connected,
@@ -14,6 +15,7 @@ class func_server:
             "room_already_created": self.room_already_created,
             "room_wrong_password": self.room_wrong_password,
             "debug": self.debug,
+            "authentication_failed": self.authentication_failed,
             "authenticated": self.token,
             "get_rooms": self.get_rooms,
 
@@ -76,10 +78,19 @@ class func_server:
     def token(self, data, socket):
         print("Token received: ", data["data"]["token"])
         self.client.sv_token(data["data"]["token"])
+        self.contr.show_frame("RoomPage")
+        self.contr.frames["RoomPage"].actualise()
+    
+    def authentication_failed(self, data, socket):
+        print("Authentication failed")
+        if self.client.server_socket:
+            self.client.server_socket.close()
+        self.contr.frames["LoginPage"].update_text("Authentication failed. Please try again.")
 
 class func_room:
     def __init__(self, client):
         self.client = client
+        self.contr = client.contr
         self.tag = {
             "room_message": self.room_message,
             "room_file": self.room_file,
@@ -91,6 +102,7 @@ class func_room:
 
     def room_message(self, data, socket):
         print("message received: ", data["data"])
+        self.contr.frames["ChatPage"].add_message(data["data"]["username"], data["data"]["message"])
 
     def room_file(self, data, socket):
         print("file received")

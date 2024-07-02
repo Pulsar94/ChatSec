@@ -8,7 +8,7 @@ class ChatPage(ttk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.chat_histories = self.controller.frames["RoomPage"].chat_histories
-        self.client = None
+        self.client = controller.client
         self.create_widgets()
 
     def create_widgets(self):
@@ -37,8 +37,8 @@ class ChatPage(ttk.Frame):
 
         self.current_room = None
 
-    def get_users(self, event):
-        self.client.rm_users()
+    #def get_users(self, event):
+    #    self.client.rm_users()
 
     def update_chat_history(self):
         if self.current_room in self.chat_histories:
@@ -46,6 +46,12 @@ class ChatPage(ttk.Frame):
             self.chat_text.delete(1.0, tk.END)
             for message in self.chat_histories[self.current_room]:
                 self.chat_text.insert(tk.END, message + "\n")
+            self.chat_text.config(state="disabled")
+
+    def add_message(self, username, message):
+        if self.current_room:
+            self.chat_text.config(state="normal")
+            self.chat_text.insert(tk.END, f"{username}: {message}\n")
             self.chat_text.config(state="disabled")
 
     def clavier(self, event):
@@ -59,7 +65,6 @@ class ChatPage(ttk.Frame):
             self.message_entry.delete(0, tk.END)
 
     def return_to_room(self):
-        # self.client.
         self.controller.show_frame("RoomPage")
         self.controller.frames["RoomPage"].actualise()
 
@@ -68,9 +73,6 @@ class ChatPage(ttk.Frame):
         if file_path and self.current_room and self.client:
             username = self.controller.username
             self.client.rm_send_file(file_path,self.current_room, username)
-
-    def link_client(self, client):
-        self.client = client
 
 class CountdownDialog(tk.Toplevel):
     def __init__(self, parent, file_name, username, timeout=30):
@@ -120,8 +122,6 @@ class CountdownDialog(tk.Toplevel):
     def decline(self):
         self.result = False
         self.destroy()
-
-
 
 def on_file_received(parent, file_name, file_data):
     save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")
