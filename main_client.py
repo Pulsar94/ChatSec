@@ -1,8 +1,4 @@
-from client.client import Client
-import threading as thread
-import socket
-import shared.json_handler as jh
-import time
+from GUI.GUI import ChatApp
 
 def main():
     print("---------------------------Starting client---------------------------")
@@ -17,5 +13,12 @@ def main():
     client.sv_create_room("room1", "123")
     # time.sleep(1)
     # client.rm_send_message("hello", "Tom")
+
+    
+    
+    
+    app = ChatApp()
+    app.mainloop()
+
 
 main()

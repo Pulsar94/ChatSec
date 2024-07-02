@@ -15,6 +15,8 @@ class func_server:
             "room_wrong_password": self.room_wrong_password,
             "debug": self.debug,
             "authenticated": self.token,
+            "get_rooms": self.get_rooms,
+
         }
         self.tag_unencrypted = {
             "need_pem": self.need_pem,
@@ -23,6 +25,10 @@ class func_server:
             "get_pem_end": self.get_pem_end,
         }
         self.files = {}
+
+    def get_rooms(self, data, socket):
+        print("Rooms: ", data["data"])
+        self.client.room_list = data["data"]
 
     def room_already_connected(self, data, socket):
         print("Room already connected")
@@ -44,7 +50,7 @@ class func_server:
     
     def need_pem(self, data, socket):
         filename = "client-pub-key"
-        self.client.sv_send_pem(filename)
+        self.client.server_socket.send(jh.json_encode("need_pem",{}).encode())
     
     def get_pem_start(self, data, socket):
         self.filename = data["data"]["file_name"]
@@ -103,7 +109,6 @@ class func_room:
                 file.write(base64.b64decode(seg))
     
     def guest_try(self, data, socket):
-        print("Guest try received")
         client_data = jh.json_encode("guest_try", {})
         self.client.rm_send(client_data)
     
