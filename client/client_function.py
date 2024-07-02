@@ -87,8 +87,6 @@ class func_server:
     
     def authentication_failed(self, data, socket):
         print("Authentication failed")
-        if self.client.server_socket:
-            self.client.server_socket.close()
         self.contr.frames["LoginPage"].update_text("Authentication failed. Please try again.")
     
     def user_added(self, data, socket):

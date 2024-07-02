@@ -58,8 +58,7 @@ class Client:
 
     def rm_disconnect(self):
         self.rm_send(jh.json_encode("room_disconnect", {}))
-        sleep(0.5)
-        self.ssl_room_socket.close()
+        sleep(0.1)
         self.ssl_room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def sv_listen(self):
@@ -91,20 +90,25 @@ class Client:
                         print("A unencrypted message has been received but an error occurred. Ignoring message...")
 
     def rm_listen(self):
-        if self.ssl_room_socket:
             while True:
-                received = self.ssl_room_socket.recv(1024)
                 try:
+                    received = self.ssl_room_socket.recv(1024)
+                
                     if received != "":
                         data = jh.json_decode(received)
                         print("Room says: ", data)
-
-                        for tag, callback in self.func_room.tag.items():
-                            if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
-                                print("Executed callback for tag", tag)
-                                break
+                        try:
+                            for tag, callback in self.func_room.tag.items():
+                                if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
+                                    print("Executed callback for tag", tag)
+                                    break
+                        except:
+                            print("An error occurred while processing the room message. Ignoring message...")
                 except:
-                    print("An error occurred while processing the room message. Ignoring message...")
+                    self.ssl_room_socket.close()
+                    self.ssl_room_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    print("An error occurred while processing the connection. Closing socket.")
+                    break
 
     def sv_authentification(self, username, password):
         hashed_password = ""
