@@ -19,6 +19,8 @@ class func_server:
             "authentication_failed": self.authentication_failed,
             "authenticated": self.token,
             "get_rooms": self.get_rooms,
+            "user_added": self.user_added,
+            "user_already_exists": self.user_already_exists,
 
         }
         self.tag_unencrypted = {
@@ -88,6 +90,14 @@ class func_server:
         if self.client.server_socket:
             self.client.server_socket.close()
         self.contr.frames["LoginPage"].update_text("Authentication failed. Please try again.")
+    
+    def user_added(self, data, socket):
+        print("User added")
+        self.contr.frames["LoginPage"].update_text("User added. Please login.")
+    
+    def user_already_exists(self, data, socket):
+        print("User already exists")
+        self.contr.frames["LoginPage"].update_text("Mail already in use.")
 
 class func_room:
     def __init__(self, client):

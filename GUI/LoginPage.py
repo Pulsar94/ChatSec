@@ -11,6 +11,7 @@ class LoginPage(ttk.Frame):
         self.controller = controller
         self.client = controller.client
         self.new_user = None
+        self.connected = False
         self.create_widgets()
 
     def create_widgets(self):
@@ -35,25 +36,36 @@ class LoginPage(ttk.Frame):
 
         self.login_button = ttk.Button(self, text="Login", command=self.login)
         self.login_button.pack(pady=5, padx=10)
+
+        self.add_user_button = ttk.Button(self, text="Add User", command=self.add_account)
+        self.add_user_button.pack(pady=5, padx=10)
+
+        self.update_text("Attempting connection to server.")
+        self.connect()
     
     def update_text(self, text):
         self.text.config(text=text)
 
     def login(self):
         self.controller.username = self.username.get()
-        self.update_text("Connexion in progress...")
-        self.initialize_client(self.username.get(), self.password.get())
-    
-    def initialize_client(self, username, password):
-        self.client.sv_connect(socket.gethostname(), 5000)
-        threading.Thread(target=self.client.sv_listen).start()
-        sleep(1)
-        self.client.sv_authentification(username, password)
+        self.update_text("Authentification in progress...")
+        self.client.sv_authentification(self.username.get(), self.password.get())
+
+    def connect(self):
+        while not self.connected:
+            try:
+                self.client.sv_connect(socket.gethostname(), 5000)
+                threading.Thread(target=self.client.sv_listen).start()
+                self.connected = True
+                self.update_text("Connected to server.")
+            except:
+                self.update_text("Server not available. Retrying...")
+                sleep(1)
 
     def add_account(self):
         self.new_user = tk.Toplevel(self)
         self.new_user.title("Add User")
-        self.new_user.geometry("300x200")  # Width x Height
+        self.new_user.geometry("300x300")  # Width x Height
 
         mail_label = ttk.Label(self.new_user, text="Enter your mail:")
         mail_label.pack(pady=10, padx=10)
@@ -73,7 +85,7 @@ class LoginPage(ttk.Frame):
         password_entry = ttk.Entry(self.new_user, show="*")
         password_entry.pack(pady=5, padx=10)
 
-        self.new_user_text = ttk.Label(self.new_user, text="Add User")
+        self.new_user_text = ttk.Label(self.new_user, text="")
         self.new_user_text.pack(pady=10, padx=10)
 
         self.new_user_button = ttk.Button(self.new_user, text="Add Account", command=lambda :self.check_and_send_new_user(username_entry.get(), password_entry.get(), mail_entry.get()))
