@@ -47,6 +47,14 @@ class func:
         self.port += 1
         room = rooms.Room(data["data"]["room"], self.port, data["data"]["password"])
         if self.rooms.add_room(room):
+            # Log creation of room
+            try:
+                with open('Logs/room_creation.log', 'a') as file:
+                    file.write(
+                        f"{time.asctime()} - Room {data['data']['room']} created from IP {socket.getpeername()[0]}\n")
+            except IOError as e:
+                print(e)
+
             self.server.send_pem(socket, room.name+"-cert")
             client_data = jh.json_encode("connect_room", {"name":room.name, "port":room.port})
         else:
@@ -165,6 +173,10 @@ class func:
         :param socket:
         :return: none
         """
+        path = "Logs"
+        # Check if the directory exists
+        if not os.path.exists(path):
+            os.makedirs(path)
         # Check if the user already exists
         if data["data"]["username"] not in self.users_authentification:
             # Add the user to the database
