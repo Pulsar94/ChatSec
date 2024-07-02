@@ -155,6 +155,9 @@ class Client:
             sleep(0.1)
             print("Sending pem file segment: end")
             self.ssl_room_socket.send(jh.json_encode("room_file_seg_end", {"file_name": "ret_"+file_name}).encode())
+    
+    def rm_users(self):
+        print("Getting users")
                   
     def __del__(self):
         self.server_socket.close()

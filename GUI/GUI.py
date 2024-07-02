@@ -1,6 +1,7 @@
 from GUI.login import LoginPage
 from GUI.chat_room import ChatPage
 from GUI.room_connection import RoomPage
+from PIL import Image, ImageTk
 import shared.json_handler as jh
 from client.client import Client 
 import tkinter as tk
@@ -13,6 +14,9 @@ import ssl
 class ChatApp(tk.Tk):
     def __init__(self):
         super().__init__()
+        icon_path = os.path.join(os.path.dirname(__file__), 'small_logo.png')  # Ensure this is the correct path
+        self.icon_image = tk.PhotoImage(file=icon_path)
+        self.iconphoto(False, self.icon_image)
         self.title("Chat P2P")
         self.geometry("800x600")
         self.username = None
@@ -26,16 +30,6 @@ class ChatApp(tk.Tk):
             self.frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame("LoginPage")
         
-        
-    # def show_frame(self, page_name):
-    #     print('show_frame:', page_name)
-    #     if page_name in self.frames:
-    #         self.frame.grid_forget() # Remove current frame from display
-    #         self.frame = self.frames[page_name]
-    #         print('frame',self.frame)  # Set new frame
-    #         self.frame.grid(row=0, column=0, sticky="nsew")  # Display new frame
-    #     else:
-    #         print(f"Error: Frame '{page_name}' does not exist.")
 
     def show_frame(self, page_name):
         self.frame = self.frames[page_name]

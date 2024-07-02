@@ -1,4 +1,5 @@
 from tkinter import ttk,messagebox
+from time import sleep
 import tkinter as tk
 import threading
 import socket
@@ -30,6 +31,7 @@ class RoomPage(ttk.Frame):
     def actualise(self):
         if self.client:
             self.client.sv_send(jh.json_encode("get_rooms", {}))
+            sleep(0.1)
             self.room_list.delete(0, tk.END)
             for r in self.client.room_list:
                 self.room_list.insert(tk.END, r)

@@ -20,11 +20,11 @@ class ChatPage(ttk.Frame):
         left_frame.pack(side="left", fill="y")
         right_frame = ttk.Frame(self)
         right_frame.pack(side="right", fill="both", expand=True)
-        # user_list_label = ttk.Label(left_frame, text="Liste des rooms")
-        # user_list_label.pack(pady=10, padx=10)
-        # self.user_list = tk.Listbox(left_frame)
-        # self.user_list.pack(fill="y", expand=True, pady=5, padx=10)
-        # self.user_list.bind("<<ListboxSelect>>", self.on_room_select)
+        user_list_label = ttk.Label(left_frame, text="Utilisateurs connectés")
+        user_list_label.pack(pady=10, padx=10)
+        self.user_list = tk.Listbox(left_frame)
+        self.user_list.pack(fill="y", expand=True, pady=5, padx=10)
+        self.user_list.bind(self.get_users)
         chat_label = ttk.Label(right_frame, text="Chat")
         chat_label.pack(pady=10, padx=10)
         self.chat_text = tk.Text(right_frame, state="disabled")
@@ -41,12 +41,8 @@ class ChatPage(ttk.Frame):
 
         self.current_room = None
 
-    # def on_room_select(self, event):
-    #     selected_indices = self.user_list.curselection()
-    #     if selected_indices:
-    #         selected_index = selected_indices[0]
-    #         self.current_room = self.user_list.get(selected_index)
-    #         self.update_chat_history()
+    def get_users(self, event):
+        self.client.rm_users()
 
     def update_chat_history(self):
         if self.current_room in self.chat_histories:
@@ -67,6 +63,7 @@ class ChatPage(ttk.Frame):
             self.message_entry.delete(0, tk.END)
 
     def return_to_room(self):
+        # self.client.
         self.controller.show_frame("RoomPage")
         self.controller.frames["RoomPage"].actualise()
 
