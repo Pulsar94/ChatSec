@@ -1,4 +1,4 @@
-from tkinter import ttk,messagebox
+from tkinter import ttk
 from time import sleep
 import tkinter as tk
 import threading
