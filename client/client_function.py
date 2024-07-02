@@ -2,6 +2,7 @@ import shared.json_handler as jh
 import base64
 from os import makedirs
 import base64
+import GUI.FileTransferDialog
 
 class func_server:
     def __init__(self, client):
@@ -30,7 +31,7 @@ class func_server:
 
     def get_rooms(self, data, socket):
         print("Rooms: ", data["data"])
-        self.client.room_list = data["data"]
+        self.contr.frames["RoomPage"].actualise_rooms(data["data"])
 
     def room_already_connected(self, data, socket):
         print("Room already connected")
@@ -79,7 +80,7 @@ class func_server:
         print("Token received: ", data["data"]["token"])
         self.client.sv_token(data["data"]["token"])
         self.contr.show_frame("RoomPage")
-        self.contr.frames["RoomPage"].actualise()
+        self.contr.frames["RoomPage"].request_rooms()
     
     def authentication_failed(self, data, socket):
         print("Authentication failed")
@@ -97,6 +98,7 @@ class func_room:
             "room_file_seg": self.room_file_seg,
             "room_file_seg_end": self.room_file_seg_end,
             "guest_try": self.guest_try,
+            "room_file_request": self.room_file_request,
         }
         self.files = {}
 
@@ -116,13 +118,16 @@ class func_room:
     
     def room_file_seg_end(self, data, socket):
         print("file segment end received")
-        with open(data["data"]["file_name"], 'wb') as file:
-            for seg in self.files[data["data"]["file_name"]]:
-                file.write(base64.b64decode(seg))
+        GUI.FileTransferDialog.on_file_received(data["data"]["file_name"], self.files[data["data"]["file_name"]])
     
     def guest_try(self, data, socket):
         client_data = jh.json_encode("guest_try", {})
         self.client.rm_send(client_data)
+    
+    def room_file_request(self, data, socket):
+        filename = data["data"]["name"]
+        size = data["data"]["size"]
+        GUI.FileTransferDialog.FileTransferDialog(self.contr, filename, size, self.client)
     
     
    

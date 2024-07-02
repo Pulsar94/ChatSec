@@ -21,16 +21,17 @@ class RoomPage(ttk.Frame):
         join_button.pack(pady=5, padx=10)
         create_button = ttk.Button(self, text="Create", command=self.createwindow)
         create_button.pack(pady=5, padx=10)
-        actualise_button = ttk.Button(self, text=chr(0x21BB), command=self.actualise)
+        actualise_button = ttk.Button(self, text=chr(0x21BB), command=self.request_rooms)
         actualise_button.pack(side="left",pady=5)
 
-    def actualise(self):
+    def request_rooms(self):
         if self.client:
             self.client.sv_send(jh.json_encode("get_rooms", {}))
-            sleep(0.1)
-            self.room_list.delete(0, tk.END)
-            for r in self.client.room_list:
-                self.room_list.insert(tk.END, r)
+
+    def actualise_rooms(self, data):
+        self.room_list.delete(0, tk.END)
+        for r in data:
+            self.room_list.insert(tk.END, r)
 
     def createwindow(self):
         self.popup = tk.Toplevel(self)
@@ -64,7 +65,14 @@ class RoomPage(ttk.Frame):
         self.controller.frames["RoomPage"].client.sv_create_room(room_name, room_password)
         self.controller.frames["RoomPage"].room_list.insert(tk.END, room_name)
         self.controller.frames["RoomPage"].chat_histories[room_name] = []
+        self.selected_room = room_name
+
+        self.controller.show_frame("ChatPage")
+        self.controller.frames["ChatPage"].current_room = self.selected_room
+        self.controller.frames["ChatPage"].update_chat_history()
+        
         self.popup.destroy()
+
 
     def join_room(self):
         selected_indices = self.room_list.curselection()
@@ -93,13 +101,17 @@ class RoomPage(ttk.Frame):
         self.room_verif.wait_window()
 
     def room_verification_check(self,room,password):
+        print("Room verification check")
         if self.client :
-            if not self.client.ssl_room_socket:
-                self.client.sv_connect_room(room, password)
+            if self.client.ssl_room_socket:
+                self.client.ssl_room_socket.close()
+            print("Room verification check2")
+            self.client.sv_connect_room(room, password)
             self.controller.show_frame("ChatPage")
             self.controller.frames["ChatPage"].current_room = self.selected_room
             self.controller.frames["ChatPage"].update_chat_history()
             self.room_verif.destroy()
+            print("Room verification check3")
 
     def update_room_history(self):
         self.controller.frames["ChatPage"].update_chat_history()

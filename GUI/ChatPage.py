@@ -65,70 +65,12 @@ class ChatPage(ttk.Frame):
             self.message_entry.delete(0, tk.END)
 
     def return_to_room(self):
+        self.client.rm_disconnect()
         self.controller.show_frame("RoomPage")
-        self.controller.frames["RoomPage"].actualise()
+        self.controller.frames["RoomPage"].request_rooms()
 
     def select_and_send_file(self):
         file_path = filedialog.askopenfilename()
         if file_path and self.current_room and self.client:
             username = self.controller.username
             self.client.rm_send_file(file_path,self.current_room, username)
-
-class CountdownDialog(tk.Toplevel):
-    def __init__(self, parent, file_name, username, timeout=30):
-        super().__init__(parent)
-        self.title("File Received")
-        self.file_name = file_name
-        self.timeout = timeout
-        self.result = None
-        
-        self.label = ttk.Label(self, text=f"{username} wants to send you the file {file_name}. Do you want to accept?")
-        self.label.pack(pady=10)
-
-        self.countdown_label = ttk.Label(self, text=f"Time remaining: {self.timeout} seconds")
-        self.countdown_label.pack(pady=10)
-
-        self.button_frame = ttk.Frame(self)
-        self.button_frame.pack(pady=10)
-        
-        self.accept_button = ttk.Button(self.button_frame, text="Accept", command=self.accept)
-        self.accept_button.grid(row=0, column=0, padx=5)
-        
-        self.decline_button = ttk.Button(self.button_frame, text="Decline", command=self.decline)
-        self.decline_button.grid(row=0, column=1, padx=5)
-        
-        self.protocol("WM_DELETE_WINDOW", self.decline)  # Handle window close button
-        
-        self.start_countdown()
-
-        # Center the dialog on the parent window
-        self.update_idletasks()
-        x = parent.winfo_rootx() + parent.winfo_width() // 2 - self.winfo_width() // 2
-        y = parent.winfo_rooty() + parent.winfo_height() // 2 - self.winfo_height() // 2
-        self.geometry(f"+{x}+{y}")
-
-    def start_countdown(self):
-        if self.timeout > 0:
-            self.timeout -= 1
-            self.countdown_label.config(text=f"Time remaining: {self.timeout} seconds")
-            self.after(1000, self.start_countdown)
-        else:
-            self.decline()
-
-    def accept(self):
-        self.result = True
-        self.destroy()
-
-    def decline(self):
-        self.result = False
-        self.destroy()
-
-def on_file_received(parent, file_name, file_data):
-    save_path = filedialog.asksaveasfilename(initialfile=file_name, title="Save File As")
-    if save_path:
-        with open(save_path, 'wb') as file:
-            for seg in file_data:
-                file.write(base64.b64decode(seg))
-        print("File accepted and saved")
-    else:
-        print("File declined")

@@ -147,21 +147,45 @@ class Room:
             data_to_send = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
             data["socket"].send(data_to_send.encode())
 
-    def add_file(self, filename):
-        self.files[filename] = []
+    def add_file(self, filename, owner):
+        self.files[filename] = {}
+        self.files[filename]["file"] = []
+        self.files[filename]["timer"] = 30
+        self.files[filename]["owner"] = owner
 
     def add_file_seg(self, filename, segment):
-        self.files[filename].append(segment)
+        self.files[filename]["file"].append(segment)
 
     def add_file_seg_end(self, filename):
         for key, s_data in self.guests.items():
-            seg_count = 0
-            s_data["socket"].send(jh.json_encode("room_file", {"file_name": filename}).encode())
-            for seg in self.files[filename]:
-                sleep(0.1)
-                print("Sending file segment to guest", key)
-                data = jh.json_encode("room_file_seg", {"file_name": filename, "seg": seg_count, "file": seg})
-                s_data["socket"].send(data.encode())
-                seg_count += 1
+            if key != self.files[filename]["owner"]:
+                file_size = len(self.files[filename]["file"])
+                data_to_send = jh.json_encode("room_file_request", {"name": filename, "size": file_size})
+
+                s_data["socket"].send(data_to_send.encode())
+        
+        thread.Thread(target=self.handle_file_timer, args=(filename)).start()
+    
+    def handle_file_timer(self, filename):
+        while True:
+            sleep(1)
+            self.files[filename]["timer"] -= 1
+            if self.files[filename]["timer"] == 0:
+                self.files.pop(filename)
+                print(f"File {filename} expired")
+                break
+    
+    def send_file(self, filename, socket):
+        if filename not in self.files:
+            return
+        seg_count = 0
+        self.files[filename]["timer"] = 30
+        socket.send(jh.json_encode("room_file", {"file_name": filename}).encode())
+        for seg in self.files[filename]["file"]:
             sleep(0.1)
-            s_data["socket"].send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())
+            print("Sending file segment to guest")
+            data = jh.json_encode("room_file_seg", {"file_name": filename, "seg": seg_count, "file": seg})
+            socket.send(data.encode())
+            seg_count += 1
+        sleep(0.1)
+        socket.send(jh.json_encode("room_file_seg_end", {"file_name": filename}).encode())
