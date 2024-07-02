@@ -94,11 +94,10 @@ class Client:
         if self.ssl_room_socket:
             while True:
                 received = self.ssl_room_socket.recv(1024)
-                print("Received: ", received)
                 try:
                     if received != "":
                         data = jh.json_decode(received)
-                        print("Server says: ", data)
+                        print("Room says: ", data)
 
                         for tag, callback in self.func_room.tag.items():
                             if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
