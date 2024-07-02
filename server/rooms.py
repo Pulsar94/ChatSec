@@ -31,7 +31,7 @@ class Rooms:
 
     def room_guests_checker(self):
         while True:
-            sleep(10)
+            sleep(30)
             for r in self.rooms:
                 if r.guest_try():
                     print(f"{r.name} has no guests. Deleting room...")
@@ -164,7 +164,7 @@ class Room:
 
                 s_data["socket"].send(data_to_send.encode())
         
-        thread.Thread(target=self.handle_file_timer, args=(filename)).start()
+        thread.Thread(target=self.handle_file_timer, args=(filename,)).start()
     
     def handle_file_timer(self, filename):
         while True:
