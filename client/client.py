@@ -24,7 +24,11 @@ class Client:
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.func_server = func_server(self)
         self.func_room = func_room(self)
-    
+        self.user_token = ""
+
+    def sv_token(self, token):
+        self.user_token = token
+
     def sv_connect(self, host, port):
         try:
             self.server_socket.connect((host, port))
@@ -88,12 +92,24 @@ class Client:
                     if jh.compare_tag_from_socket(data, tag, callback, self.ssl_room_socket):
                         print("Executed callback for tag", tag)
                         break
-    
+
+    def sv_authentification(self, username, password):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.sv_send(jh.json_encode("authentification", {"username": username, "password": hashed_password}))
+
+    def sv_add_user(self, username, password, name):
+        hashed_password = ""
+        if password != "":
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        self.sv_send(jh.json_encode("add_user", {"username": username, "password": hashed_password, "name": name}))
+
     def sv_create_room(self, room, password):
         hashed_password = ""
         if password != "":
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        self.sv_send(jh.json_encode("create_room", {"room": room, "password": hashed_password}))
+        self.sv_send(jh.json_encode("create_room", {"room": room, "password": hashed_password, "token": self.user_token}))
     
     def sv_connect_room(self, room, password):
         hashed_password = ""
