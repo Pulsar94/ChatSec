@@ -14,7 +14,7 @@ class func_server:
             "room_already_created": self.room_already_created,
             "room_wrong_password": self.room_wrong_password,
             "debug": self.debug,
-            "token": self.token,
+            "authenticated": self.token,
         }
         self.tag_unencrypted = {
             "need_pem": self.need_pem,
@@ -68,7 +68,7 @@ class func_server:
         self.client.sv_send(client_data)
 
     def token(self, data, socket):
-        print("Token received: ", data["data"])
+        print("Token received: ", data["data"]["token"])
         self.client.sv_token(data["data"]["token"])
 
 class func_room:

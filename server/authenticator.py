@@ -1,8 +1,11 @@
+import hashlib
 import json
 import os
 import secrets
 import jwt
 import datetime
+import string
+import random
 
 class Authenticator:
     def __init__(self):
@@ -26,13 +29,9 @@ class Authenticator:
             return data['users']
 
     def token(self):
-        secret_key = secrets.token_urlsafe(32)
-        # Définir le contenu du token
-        payload = {
-            'username': 'test',
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-        }
-        # Création du token
-        token = jwt.encode(payload, secret_key, algorithm='HS256')
+        token = random.choice(string.ascii_letters)
+        hashed_token = hashlib.sha256(token.encode()).hexdigest()
+        half_token = hashed_token[:len(hashed_token) // 2]
+        return half_token
 
-        return token
+

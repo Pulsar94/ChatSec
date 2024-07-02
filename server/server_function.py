@@ -10,7 +10,7 @@ import json
 class func:
     def __init__(self, server):
         self.pem_file = []
-        self.token = {}
+        self.token = []
         self.server = server
         self.rooms = server.rooms
         self.port = 5000
@@ -33,8 +33,8 @@ class func:
 
     def create_room(self, data, socket):
         # Check if the token is valid
-        if data["data"]["token"] != self.token[data["data"]["username"]]:
-            client_data = jh.json_encode("authentication_failed", "")
+        if data["data"]["token"] not in self.token:
+            client_data = jh.json_encode("action_impossible_authentication_failed", "")
             socket.send(client_data.encode())
             return
 
@@ -48,6 +48,12 @@ class func:
         self.server.send(socket, client_data)
 
     def connect_room(self, data, socket):
+        # Check if the token is valid
+        if data["data"]["token"] not in self.token:
+            client_data = jh.json_encode("action_impossible_authentication_failed", "")
+            socket.send(client_data.encode())
+            return
+
         print("Connecting to room")
         room = self.rooms.get_room(data["data"]["room"])
         passw = data["data"]["password"]
@@ -112,9 +118,9 @@ class func:
             if self.users_authentification[data["data"]["username"]] == data["data"]["password"]:
                 # Send a message to the client that the authentication was successful
                 token = authenticator.Authenticator().token()
-                self.token[data["data"]["username"]] = token
+                self.token.append(token)
                 client_data = jh.json_encode("authenticated", {"token": token})
-                socket.send(client_data.encode())
+                self.server.send(socket, client_data)
                 # Log the connection
                 try:
                     with open('Logs/connection.log', 'a') as file:
@@ -126,7 +132,7 @@ class func:
             else:
                 # Send a message to the client that the authentication failed
                 client_data = jh.json_encode("authentication_failed", "")
-                socket.send(client_data.encode())
+                self.server.send(socket, client_data)
                 # Log the failed connection
                 try:
                     with open('Logs/connection.log', 'a') as file:
@@ -137,7 +143,7 @@ class func:
         else:
             # Send a message to the client that the authentication failed
             client_data = jh.json_encode("authentication_failed", "")
-            socket.send(client_data.encode())
+            self.server.send(socket, client_data)
             # Log the failed connection
             try:
                 with open('Logs/connection.log', 'a') as file:
@@ -169,7 +175,7 @@ class func:
             self.users_info = authenticator.Authenticator().extract_all_user_info()
             # Send a message to the client that the user was added
             client_data = jh.json_encode("user_added", "")
-            socket.send(client_data.encode())
+            self.server.send(socket, client_data)
             # Log the addition of the user
             try:
                 with open('Logs/DB_actions.log', 'a') as file:
@@ -179,4 +185,4 @@ class func:
         else:
             # Send a message to the client that the user already exists
             client_data = jh.json_encode("user_already_exists", "")
-            socket.send(client_data.encode())
+            self.server.send(socket, client_data)
