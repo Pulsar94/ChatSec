@@ -29,7 +29,8 @@ class func:
 
     def handle_room_message(self, data, socket):
         print("Adding message to ", self.room.name)
-        self.room.add_message(data["data"]["message"], data["data"]["username"])
+        username = self.room.guests[socket..getpeername()]["username"]
+        self.room.add_message(data["data"]["message"], username)
 
     def room_file(self, data, socket):
         print("Adding file to ", self.room.name)
