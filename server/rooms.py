@@ -151,7 +151,7 @@ class Room:
     def add_message(self, message, username):
         for key, data in self.guests.items():
             print("Sending message to guest", key)
-            data_to_send = jh.json_encode("room_message", {"room": self.name, "username": data["username"], "message": message})
+            data_to_send = jh.json_encode("room_message", {"room": self.name, "username": username, "message": message})
             data["socket"].send(data_to_send.encode())
 
     def add_file(self, filename, owner):
